@@ -33,4 +33,4 @@ build/
 .vscode/
 
 # Local environment configuration
-# visa-backoffice/src/main/resources/application.properties
+visa-backoffice/src/main/resources/application.properties
