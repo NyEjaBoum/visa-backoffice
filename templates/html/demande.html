@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zendenta - Visa Madagascar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f4f7f9;
+            --card-bg: #ffffff;
+            --primary: #2563eb;
+            --danger: #ef4444;
+            --border-radius: 1.5rem; /* Exactement 1.5rem comme demandé */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: #334155;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        /* Cadre blanc central SaaS-style */
+        .card {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        h1 { font-weight: 600; margin-bottom: 30px; color: #1e293b; }
+        h3 { border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; margin-top: 30px; }
+
+        .form-section { margin-bottom: 30px; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .input-group { display: flex; flex-direction: column; gap: 8px; }
+
+        label { font-size: 0.9rem; font-weight: 500; }
+
+        input, select {
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            transition: border 0.3s;
+        }
+
+        input:focus { border-color: var(--primary); outline: none; }
+
+        /* Style des checklists */
+        .checklist {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 1rem;
+            margin-top: 10px;
+        }
+
+        .check-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .error-msg {
+            color: var(--danger);
+            font-size: 0.8rem;
+            display: none;
+            margin-top: 5px;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 30px;
+            transition: opacity 0.3s;
+        }
+
+        button:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h1>Nouveau Dossier Visa</h1>
+
+        <div class="form-section">
+            <label>Nature de la procédure</label>
+            <select id="typeDemande" style="width: 100%; margin-top: 8px;">
+                <option value="1">Transformation de Visa (Nouveau Titre)</option>
+                <option value="2">Transfert de Visa</option>
+                <option value="3">Duplicata de Carte</option>
+            </select>
+        </div>
+
+        <form id="visaForm">
+            <div class="form-section">
+                <h3>1. État Civil</h3>
+                <div class="grid">
+                    <div class="input-group">
+                        <label>Nom</label>
+                        <input type="text" placeholder="Ex: RAKOTO" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Prénoms</label>
+                        <input type="text" placeholder="Ex: Jean" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>2. Voyage & Passeport</h3>
+                <div class="grid">
+                    <div class="input-group">
+                        <label>Numéro de Passeport</label>
+                        <input type="text" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Date d'expiration</label>
+                        <input type="date" id="dateExp" onchange="checkPassport()" required>
+                        <span id="errorExp" class="error-msg">Ce passeport est expiré !</span>
+                    </div>
+                    <div class="input-group">
+                        <label>Réf. Visa Transformable (Obligatoire)</label>
+                        <input type="text" placeholder="Réf. Ministère de l'Intérieur" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>3. Catégorie & Pièces Fournies</h3>
+                <label>Type de Visa demandé</label>
+                <select id="typeVisa" style="width: 100%; margin-top: 8px;" onchange="updateChecklist()">
+                    <option value="travailleur">Travailleur</option>
+                    <option value="investisseur">Investisseur</option>
+                    <option value="etudiant">Étudiant</option>
+                </select>
+
+                <div class="checklist" id="checklist">
+                    </div>
+            </div>
+
+            <button type="submit">Enregistrer le dossier (Statut : CRÉÉ)</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // 1. Checklist dynamique selon le type de visa
+    const pieces = {
+        travailleur: ["Contrat de travail", "Autorisation d'emploi (EDBM)", "Photos d'identité", "Casier Judiciaire"],
+        investisseur: ["Statuts de la société", "Carte Fiscale", "Récépissé Bancaire", "Photos d'identité"],
+        etudiant: ["Certificat de scolarité", "Preuve de ressources", "Photos d'identité"]
+    };
+
+    function updateChecklist() {
+        const type = document.getElementById('typeVisa').value;
+        const container = document.getElementById('checklist');
+        container.innerHTML = `<strong>Pièces obligatoires pour ${type} :</strong><br><br>`;
+        
+        pieces[type].forEach(piece => {
+            container.innerHTML += `
+                <div class="check-item">
+                    <input type="checkbox"> <span>${piece}</span>
+                </div>
+            `;
+        });
+    }
+
+    // 2. Validation Métier : Passeport expiré
+    function checkPassport() {
+        const dateExp = new Date(document.getElementById('dateExp').value);
+        const today = new Date();
+        const error = document.getElementById('errorExp');
+
+        if (dateExp < today) {
+            error.style.display = 'block';
+            document.querySelector('button').disabled = true;
+            document.querySelector('button').style.opacity = '0.5';
+        } else {
+            error.style.display = 'none';
+            document.querySelector('button').disabled = false;
+            document.querySelector('button').style.opacity = '1';
+        }
+    }
+
+    // Initialisation
+    updateChecklist();
+</script>
+
+</body>
+</html>
