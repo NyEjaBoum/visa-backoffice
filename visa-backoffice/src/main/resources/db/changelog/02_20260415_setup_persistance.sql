@@ -50,3 +50,4 @@ CREATE TABLE piece_fournie (
     libelle_piece VARCHAR(255) NOT NULL,
     is_present BOOLEAN DEFAULT FALSE
 );
+
