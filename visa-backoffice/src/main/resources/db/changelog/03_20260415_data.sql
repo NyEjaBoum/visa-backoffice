@@ -1,7 +1,7 @@
 SET search_path TO dev;
 
 -- Création d'un ADMIN (Mdp: password123)
-INSERT INTO utilisateur (identifiant, mdp, id_role) VALUES ('admin_naina', 'password123', 1);
+INSERT INTO utilisateur (identifiant, mdp, id_role) VALUES ('admin', 'test', 1);
 
 -- Attribution des actions autorisées pour le rôle ADMIN (ID 1)
 INSERT INTO role_action (id_role, nom_action) VALUES 
