@@ -27,11 +27,10 @@ body {
     height: 85vh;
     background: white;
     border-radius: 24px;
-    overflow: hidden; /* Important pour que l'image respecte les coins arrondis */
+    overflow: hidden;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
-/* SECTION GAUCHE */
 .login-section {
     flex: 1;
     display: flex;
@@ -46,7 +45,7 @@ body {
 }
 
 .visa-logo {
-    color: #1a1f71; 
+    color: #1a1f71;
     font-size: 32px;
     font-weight: 800;
     font-style: italic;
@@ -84,20 +83,12 @@ body {
     border-radius: 8px;
     font-size: 16px;
     outline: none;
+    font-family: 'Inter', sans-serif;
+    transition: border-color 0.2s;
 }
 
-.form-options {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 14px;
-    margin-bottom: 24px;
-}
-
-.forgot-link {
-    color: var(--primary-blue);
-    text-decoration: none;
-    font-weight: 600;
+.input-group input:focus {
+    border-color: var(--primary-blue);
 }
 
 .btn-primary {
@@ -111,49 +102,30 @@ body {
     font-weight: 600;
     cursor: pointer;
     margin-bottom: 16px;
+    font-family: 'Inter', sans-serif;
+    transition: opacity 0.2s;
 }
 
-.divider {
-    text-align: center;
-    color: var(--text-gray);
-    font-size: 12px;
-    margin: 20px 0;
-    position: relative;
+.btn-primary:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
-.btn-secondary {
-    width: 100%;
-    background: white;
-    border: 1px solid var(--border-color);
-    padding: 12px;
-    border-radius: 8px;
-    font-size: 16px;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
+.error-msg {
+    color: #d32f2f;
+    font-size: 14px;
+    margin-bottom: 12px;
 }
 
-.footer-terms {
-    margin-top: 80px;
-    font-size: 12px;
-    color: var(--text-gray);
-    text-align: center;
-}
-
-/* SECTION DROITE MODIFIÉE */
 .hero-section {
     flex: 1.2;
-    /* La couleur de fond sert de fallback si l'image ne charge pas */
-    background-color: #004EEB; 
+    background-color: #004EEB;
     position: relative;
 }
 
-/* Nouvelle classe pour gérer l'image de fond */
 .hero-image-bg {
-    background-image: url('visa.jpg'); /* Chemin vers votre image */
-    background-size: cover;       /* L'image remplit toute la zone sans être déformée */
-    background-position: center;   /* Centrer l'image */
-    background-repeat: no-repeat;  /* Ne pas répéter l'image */
+    background-image: url('/visa.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
