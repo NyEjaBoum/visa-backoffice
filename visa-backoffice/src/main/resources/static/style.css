@@ -11,7 +11,7 @@
     padding: 0;
 }
 
-body {
+body.login-body {
     font-family: 'Inter', sans-serif;
     background-color: #F2F4F7;
     display: flex;
@@ -156,4 +156,106 @@ body {
     background-size: cover;       /* L'image remplit toute la zone sans être déformée */
     background-position: center;   /* Centrer l'image */
     background-repeat: no-repeat;  /* Ne pas répéter l'image */
+}
+
+/* LAYOUT APPLICATIF (Dashboard / Dossier) */
+body.app-body {
+    display: block;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    background: #eef3f8;
+    font-family: 'Inter', sans-serif;
+}
+
+.app-layout {
+    min-height: 100vh;
+    display: flex;
+}
+
+.sidebar {
+    width: 260px;
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+    color: #f8fafc;
+    padding: 28px 16px;
+    box-shadow: 4px 0 20px rgba(2, 6, 23, 0.15);
+}
+
+.sidebar-logo {
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 24px;
+}
+
+.sidebar-subtitle {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    margin-bottom: 10px;
+}
+
+.sidebar-menu {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sidebar-link {
+    display: block;
+    color: #e2e8f0;
+    text-decoration: none;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-link:hover {
+    background: rgba(148, 163, 184, 0.2);
+    color: #ffffff;
+}
+
+.sidebar-link.active {
+    background: #0ea5e9;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.app-content {
+    flex: 1;
+    padding: 24px;
+}
+
+.app-panel {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    padding: 24px;
+}
+
+@media (max-width: 900px) {
+    .app-layout {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        padding: 20px 14px;
+    }
+
+    .app-content {
+        padding: 14px;
+    }
+}
+
+/* Enhanced app panel and card styles */
+.app-panel {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+    border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.app-content {
+    background: linear-gradient(180deg, #eef3f8 0%, #e8f0f7 100%);
 }

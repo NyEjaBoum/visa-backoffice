@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Visa Backoffice</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(15, 23, 42, 0.08);
+        }
+
+        .dashboard-header h1 {
+            margin: 0;
+            font-size: 32px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.5px;
+        }
+
+        .dashboard-header p {
+            margin-top: 6px;
+            color: #64748b;
+            font-size: 15px;
+            font-weight: 400;
+        }
+
+        .user-chip {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border: 1px solid #93c5fd;
+            border-radius: 999px;
+            padding: 10px 16px;
+            font-size: 13px;
+            color: #1e40af;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+            margin-bottom: 32px;
+        }
+
+        .kpi-card {
+            background: linear-gradient(145deg, #ffffff 0%, #f9fafb 100%);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #0ea5e9, #06b6d4);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+            border-color: rgba(14, 165, 233, 0.2);
+        }
+
+        .kpi-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .kpi-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-value {
+            font-size: 36px;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .kpi-change {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .quick-actions {
+            margin-top: 28px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn-link {
+            text-decoration: none;
+            display: inline-block;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(14, 165, 233, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f8fafc;
+            color: #0f172a;
+            border: 1.5px solid #cbd5e1;
+        }
+
+        .btn-secondary:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 900px) {
+            .kpi-grid {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .dashboard-header h1 {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body class="app-body">
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-logo">Visa</div>
+        <div class="sidebar-subtitle">Navigation</div>
+        <ul class="sidebar-menu">
+            <li><a class="sidebar-link" href="dashboard.html">Dashboard</a></li>
+            <li><a class="sidebar-link" href="demande.html">Creation de dossier</a></li>
+            <li><a class="sidebar-link" href="index.html">Deconnexion</a></li>
+        </ul>
+    </aside>
+
+    <main class="app-content">
+        <section class="app-panel">
+            <div class="dashboard-header">
+                <div>
+                    <h1>Dashboard</h1>
+                    <p>Suivi rapide des demandes de visa.</p>
+                </div>
+                <div class="user-chip" id="userChip">Utilisateur</div>
+            </div>
+
+            <div class="kpi-grid">
+                <article class="kpi-card">
+                    <div class="kpi-label">Dossiers crees</div>
+                    <div class="kpi-value">-</div>
+                </article>
+                <article class="kpi-card">
+                    <div class="kpi-label">Dossiers valides</div>
+                    <div class="kpi-value">-</div>
+                </article>
+                <article class="kpi-card">
+                    <div class="kpi-label">Dossiers annules</div>
+                    <div class="kpi-value">-</div>
+                </article>
+            </div>
+
+            <div class="quick-actions">
+                <a class="btn-link btn-primary" href="demande.html">Nouvelle demande</a>
+                <a class="btn-link btn-secondary" href="index.html">Retour connexion</a>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+    var links = document.querySelectorAll('.sidebar-link');
+    for (var i = 0; i < links.length; i++) {
+        var link = links[i];
+        var href = link.getAttribute('href');
+        if (href && window.location.pathname.slice(-href.length) === href) {
+            link.classList.add('active');
+        }
+    }
+
+    var identifiant = localStorage.getItem('identifiant');
+    if (identifiant) {
+        var userChip = document.getElementById('userChip');
+        if (userChip) {
+            userChip.textContent = identifiant;
+        }
+    }
+
+    // Charger les stats depuis l'API
+    function loadDashboardStats() {
+        fetch('/api/dossiers/stats')
+            .then(function(response) {
+                if (!response.ok) {
+                    throw new Error('Erreur lors du chargement des statistiques');
+                }
+                return response.json();
+            })
+            .then(function(data) {
+                document.querySelectorAll('.kpi-value')[0].textContent = data.dossiersCreated;
+                document.querySelectorAll('.kpi-value')[1].textContent = data.dossiersValidated;
+                document.querySelectorAll('.kpi-value')[2].textContent = data.dossiersCancelled;
+            })
+            .catch(function(error) {
+                console.error('Erreur:', error);
+            });
+    }
+
+    loadDashboardStats();
+</script>
+</body>
+</html>
