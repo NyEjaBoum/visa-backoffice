@@ -2,11 +2,8 @@ package com.visa.visa_backoffice.controller;
 
 import com.visa.visa_backoffice.dto.IndividuCompletDTO;
 import com.visa.visa_backoffice.model.Individu;
-import com.visa.visa_backoffice.service.IndividuCompletService;
 import com.visa.visa_backoffice.service.IndividuService;
-import com.visa.visa_backoffice.service.IndividuAutocompleteService;
 import com.visa.visa_backoffice.dto.IndividuAutocompleteDTO;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,14 +15,11 @@ import java.util.Optional;
 @CrossOrigin
 public class IndividuController {
 
-    @Autowired
-    private IndividuService individuService;
+    private final IndividuService individuService;
 
-    @Autowired
-    private IndividuAutocompleteService individuAutocompleteService;
-
-    @Autowired
-    private IndividuCompletService individuCompletService;
+    public IndividuController(IndividuService individuService) {
+        this.individuService = individuService;
+    }
 
     @GetMapping
     public List<Individu> getAll() {
@@ -40,39 +34,32 @@ public class IndividuController {
 
     @PostMapping
     public Individu create(@RequestBody Individu individu) {
-        return individuService.save(individu);
+        return individuService.create(individu);
     }
 
-    // @PutMapping("/{id}")
-    // public ResponseEntity<Individu> update(@PathVariable Long id, @RequestBody Individu individu) {
-    //     if (!individuService.findById(id).isPresent()) {
-    //         return ResponseEntity.notFound().build();
-    //     }
-    //     individu.setId(id);
-    //     return ResponseEntity.ok(individuService.save(individu));
-    // }
+    @PutMapping("/{id}")
+    public ResponseEntity<Individu> update(@PathVariable Integer id, @RequestBody Individu individu) {
+        return ResponseEntity.ok(individuService.update(id, individu));
+    }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
-        if (!individuService.findById(id).isPresent()) {
-            return ResponseEntity.notFound().build();
-        }
-        individuService.deleteById(id);
+        individuService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/search")
     public List<IndividuAutocompleteDTO> search(@RequestParam String q) {
-        return individuAutocompleteService.search(q);
+        return individuService.searchAutocomplete(q);
     }
 
     @GetMapping("/complets")
     public List<IndividuCompletDTO> getComplets() {
-        return individuCompletService.listComplets();
+        return individuService.listComplets();
     }
 
     @GetMapping("/{id}/complet")
     public ResponseEntity<IndividuCompletDTO> getComplet(@PathVariable Integer id) {
-        return ResponseEntity.ok(individuCompletService.getComplet(id));
+        return ResponseEntity.ok(individuService.getComplet(id));
     }
 }
