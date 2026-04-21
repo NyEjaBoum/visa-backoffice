@@ -109,12 +109,6 @@ public class DossierService {
         if (isBlank(request.numeroPasseport())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le numero de passeport est obligatoire");
         }
-        if (request.dateExpirationPasseport() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La date d expiration du passeport est obligatoire");
-        }
-        if (request.dateExpirationPasseport().isBefore(LocalDate.now())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le passeport ne doit pas etre expire");
-        }
         if (isBlank(request.refVisaTransformable())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La reference du visa transformable est obligatoire");
         }

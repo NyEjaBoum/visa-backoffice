@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS Sidebar Exact Design</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        :root {
+            --sidebar-bg: #ffffff;
+            --rail-bg: #f5f5f7;
+            --border-color: #e5e5e5;
+            --text-main: #1a1a1a;
+            --text-muted: #737373;
+            --accent-orange: #f36d21;
+            --active-bg: #f4f4f5;
+            --tree-line: #e5e5e5;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: #fcfcfc;
+            display: flex;
+            height: 100vh;
+        }
+
+        /* --- Structure --- */
+        .sidebar-container {
+            display: flex;
+            width: 320px;
+            height: 100%;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+        }
+
+        /* Rail étroit à gauche */
+        .sidebar-rail {
+            width: 64px;
+            background: var(--rail-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            border-right: 1px solid var(--border-color);
+        }
+
+        /* Panneau principal */
+        .sidebar-content {
+            flex: 1;
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Éléments du Rail --- */
+        .logo-container {
+            margin-bottom: 24px;
+            color: var(--accent-orange);
+        }
+
+        .rail-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .rail-icon:hover { background: #e8e8e9; }
+        .rail-icon.active { background: #e8e8e9; color: var(--text-main); }
+
+        .rail-bottom {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* --- Éléments du Panneau --- */
+        h1 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text-main);
+        }
+
+        .search-wrapper {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .search-wrapper i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            width: 16px;
+        }
+
+        .search-wrapper input {
+            width: 100%;
+            padding: 10px 10px 10px 38px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 16px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding-bottom: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .tab.active {
+            color: var(--text-main);
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--text-main);
+        }
+
+        /* Nav Links */
+        .nav-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .nav-item:hover { background: var(--active-bg); }
+
+        .nav-item-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-item i {
+            width: 18px;
+            color: var(--text-main);
+        }
+
+        .nav-item .plus-icon {
+            color: #d1d5db;
+        }
+
+        /* Arborescence Sous-menu */
+        .submenu {
+            margin-left: 17px;
+            border-left: 1px solid var(--tree-line);
+            padding-left: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sub-item {
+            padding: 8px 12px 8px 30px;
+            font-size: 14px;
+            color: var(--text-main);
+            position: relative;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-bottom: 2px;
+        }
+
+        /* Les petites lignes horizontales */
+        .sub-item::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 20px;
+            width: 15px;
+            height: 1px;
+            background: var(--tree-line);
+        }
+
+        /* Coins arrondis pour les lignes de l'arborescence */
+        .sub-item::after {
+            content: "";
+            position: absolute;
+            left: -1px;
+            top: 0;
+            width: 1px;
+            height: 20px;
+            background: var(--tree-line);
+        }
+
+        /* Cacher la ligne verticale qui dépasse après le dernier élément */
+        .submenu div:last-child {
+            border-left: 1px solid white; /* masque la ligne parente */
+            margin-left: -1px;
+        }
+
+        .sub-item.active {
+            background: var(--active-bg);
+            font-weight: 500;
+        }
+
+        .dot-indicator {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="sidebar-container">
+        <div class="sidebar-rail">
+            <div class="logo-container">
+                <i data-lucide="sun" style="width: 32px; height: 32px; stroke-width: 2.5px;"></i>
+            </div>
+            
+            <div class="rail-icon"><i data-lucide="home"></i></div>
+            <div class="rail-icon active"><i data-lucide="image"></i></div>
+            <div class="rail-icon"><i data-lucide="layers"></i></div>
+            <div class="rail-icon"><i data-lucide="grid-2x2"></i></div>
+            <div class="rail-icon"><i data-lucide="users"></i></div>
+            <div class="rail-icon"><i data-lucide="mail"></i></div>
+            <div class="rail-icon"><i data-lucide="wrench"></i></div>
+            <div class="rail-icon"><i data-lucide="file-text"></i></div>
+
+            <div class="rail-bottom">
+                <div class="rail-icon"><i data-lucide="refresh-cw"></i></div>
+                <div class="rail-icon"><i data-lucide="message-circle"></i></div>
+            </div>
+        </div>
+
+        <div class="sidebar-content">
+            <h1>Overview</h1>
+
+            <div class="search-wrapper">
+                <i data-lucide="search"></i>
+                <input type="text" placeholder="Search">
+            </div>
+
+            <div class="tabs">
+                <div class="tab active">My account</div>
+                <div class="tab">Shared with me</div>
+            </div>
+
+            <div class="nav-list">
+                <div class="nav-item">
+                    <div class="nav-item-left"><i data-lucide="home"></i> Home</div>
+                    <i data-lucide="plus" class="plus-icon"></i>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-item-left"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+                    <i data-lucide="plus" class="plus-icon"></i>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-item-left"><i data-lucide="folder"></i> Projects</div>
+                    <i data-lucide="plus" class="plus-icon"></i>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-item-left"><i data-lucide="check-square"></i> Tasks</div>
+                    <i data-lucide="plus" class="plus-icon"></i>
+                </div>
+                
+                <div class="nav-item">
+                    <div class="nav-item-left"><i data-lucide="settings"></i> Settings</div>
+                    <i data-lucide="minus" class="plus-icon" style="color: #1a1a1a;"></i>
+                </div>
+
+                <div class="submenu">
+                    <div class="sub-item">My details</div>
+                    <div class="sub-item active">My profile</div>
+                    <div class="sub-item">Security</div>
+                    <div class="sub-item">Integrations</div>
+                    <div class="sub-item">Billing</div>
+                </div>
+
+                <div class="nav-item" style="margin-top: 10px;">
+                    <div class="nav-item-left"><i data-lucide="message-square"></i> Messages</div>
+                    <div class="dot-indicator"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialisation des icônes Lucide
+        lucide.createIcons();
+
+        // Petit JS pour l'interactivité des onglets
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelector('.tab.active').classList.remove('active');
+                tab.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

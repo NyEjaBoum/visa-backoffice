@@ -42,7 +42,7 @@ async function handleLogin() {
 </script>
 
 <template>
-  <div class="main-container">
+  <div class="login-page"><div class="main-container">
     <div class="login-section">
       <div class="form-wrapper">
         <div class="logo">
@@ -89,5 +89,5 @@ async function handleLogin() {
     </div>
 
     <div class="hero-section hero-image-bg"></div>
-  </div>
+  </div></div>
 </template>
