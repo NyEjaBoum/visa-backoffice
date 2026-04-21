@@ -1,6 +1,8 @@
 package com.visa.visa_backoffice.controller;
 
+import com.visa.visa_backoffice.dto.IndividuCompletDTO;
 import com.visa.visa_backoffice.model.Individu;
+import com.visa.visa_backoffice.service.IndividuCompletService;
 import com.visa.visa_backoffice.service.IndividuService;
 import com.visa.visa_backoffice.service.IndividuAutocompleteService;
 import com.visa.visa_backoffice.dto.IndividuAutocompleteDTO;
@@ -21,6 +23,9 @@ public class IndividuController {
 
     @Autowired
     private IndividuAutocompleteService individuAutocompleteService;
+
+    @Autowired
+    private IndividuCompletService individuCompletService;
 
     @GetMapping
     public List<Individu> getAll() {
@@ -59,5 +64,15 @@ public class IndividuController {
     @GetMapping("/search")
     public List<IndividuAutocompleteDTO> search(@RequestParam String q) {
         return individuAutocompleteService.search(q);
+    }
+
+    @GetMapping("/complets")
+    public List<IndividuCompletDTO> getComplets() {
+        return individuCompletService.listComplets();
+    }
+
+    @GetMapping("/{id}/complet")
+    public ResponseEntity<IndividuCompletDTO> getComplet(@PathVariable Integer id) {
+        return ResponseEntity.ok(individuCompletService.getComplet(id));
     }
 }

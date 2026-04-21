@@ -36,110 +36,36 @@ public class DemandeVisa {
     @JoinColumn(name = "id_statut")
     private Statut statut;
 
-    @Column(name = "ref_visa_trans")
-    private String refVisaTrans;
-
-    @Column(name = "date_entree")
-    private LocalDate dateEntree;
-
-    @Column(name = "lieu_entree")
-    private String lieuEntree;
-
-    @Column(name = "date_fin_visa")
-    private LocalDate dateFinVisa;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_visa_transformable")
+    private VisaTransformable visaTransformable;
 
     @Column(name = "date_creation")
     private LocalDateTime dateCreation;
 
-    public Integer getId() {
-        return id;
-    }
+    public Integer getId() { return id; }
 
-    public String getNumDemande() {
-        return numDemande;
-    }
+    public String getNumDemande() { return numDemande; }
+    public void setNumDemande(String numDemande) { this.numDemande = numDemande; }
 
-    public void setNumDemande(String numDemande) {
-        this.numDemande = numDemande;
-    }
+    public Individu getIndividu() { return individu; }
+    public void setIndividu(Individu individu) { this.individu = individu; }
 
-    public Individu getIndividu() {
-        return individu;
-    }
+    public Passeport getPasseport() { return passeport; }
+    public void setPasseport(Passeport passeport) { this.passeport = passeport; }
 
-    public void setIndividu(Individu individu) {
-        this.individu = individu;
-    }
+    public TypeVisa getTypeVisa() { return typeVisa; }
+    public void setTypeVisa(TypeVisa typeVisa) { this.typeVisa = typeVisa; }
 
-    public Passeport getPasseport() {
-        return passeport;
-    }
+    public TypeDemande getTypeDemande() { return typeDemande; }
+    public void setTypeDemande(TypeDemande typeDemande) { this.typeDemande = typeDemande; }
 
-    public void setPasseport(Passeport passeport) {
-        this.passeport = passeport;
-    }
+    public Statut getStatut() { return statut; }
+    public void setStatut(Statut statut) { this.statut = statut; }
 
-    public TypeVisa getTypeVisa() {
-        return typeVisa;
-    }
+    public VisaTransformable getVisaTransformable() { return visaTransformable; }
+    public void setVisaTransformable(VisaTransformable visaTransformable) { this.visaTransformable = visaTransformable; }
 
-    public void setTypeVisa(TypeVisa typeVisa) {
-        this.typeVisa = typeVisa;
-    }
-
-    public TypeDemande getTypeDemande() {
-        return typeDemande;
-    }
-
-    public void setTypeDemande(TypeDemande typeDemande) {
-        this.typeDemande = typeDemande;
-    }
-
-    public Statut getStatut() {
-        return statut;
-    }
-
-    public void setStatut(Statut statut) {
-        this.statut = statut;
-    }
-
-    public String getRefVisaTrans() {
-        return refVisaTrans;
-    }
-
-    public void setRefVisaTrans(String refVisaTrans) {
-        this.refVisaTrans = refVisaTrans;
-    }
-
-    public LocalDate getDateEntree() {
-        return dateEntree;
-    }
-
-    public void setDateEntree(LocalDate dateEntree) {
-        this.dateEntree = dateEntree;
-    }
-
-    public String getLieuEntree() {
-        return lieuEntree;
-    }
-
-    public void setLieuEntree(String lieuEntree) {
-        this.lieuEntree = lieuEntree;
-    }
-
-    public LocalDate getDateFinVisa() {
-        return dateFinVisa;
-    }
-
-    public void setDateFinVisa(LocalDate dateFinVisa) {
-        this.dateFinVisa = dateFinVisa;
-    }
-
-    public LocalDateTime getDateCreation() {
-        return dateCreation;
-    }
-
-    public void setDateCreation(LocalDateTime dateCreation) {
-        this.dateCreation = dateCreation;
-    }
+    public LocalDateTime getDateCreation() { return dateCreation; }
+    public void setDateCreation(LocalDateTime dateCreation) { this.dateCreation = dateCreation; }
 }

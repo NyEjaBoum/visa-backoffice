@@ -6,7 +6,7 @@ public class IndividuAutocompleteDTO {
     private String prenom;
     private String nomJeuneFille;
     private String dateNaissance;
-    private String situationFamiliale;
+    private Integer situationFamilialeId;
     private String nationalite;
     private String profession;
     private String adresseMada;
@@ -15,7 +15,6 @@ public class IndividuAutocompleteDTO {
     private String dateDelivrance;
     private String dateExpiration;
 
-    // Getters et setters
     public Long getIndividuId() { return individuId; }
     public void setIndividuId(Long individuId) { this.individuId = individuId; }
     public String getNom() { return nom; }
@@ -26,8 +25,8 @@ public class IndividuAutocompleteDTO {
     public void setNomJeuneFille(String nomJeuneFille) { this.nomJeuneFille = nomJeuneFille; }
     public String getDateNaissance() { return dateNaissance; }
     public void setDateNaissance(String dateNaissance) { this.dateNaissance = dateNaissance; }
-    public String getSituationFamiliale() { return situationFamiliale; }
-    public void setSituationFamiliale(String situationFamiliale) { this.situationFamiliale = situationFamiliale; }
+    public Integer getSituationFamilialeId() { return situationFamilialeId; }
+    public void setSituationFamilialeId(Integer situationFamilialeId) { this.situationFamilialeId = situationFamilialeId; }
     public String getNationalite() { return nationalite; }
     public void setNationalite(String nationalite) { this.nationalite = nationalite; }
     public String getProfession() { return profession; }

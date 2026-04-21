@@ -4,6 +4,7 @@ import com.visa.visa_backoffice.dto.LoginRequest;
 import com.visa.visa_backoffice.dto.LoginResponse;
 import com.visa.visa_backoffice.dto.NomenclatureItem;
 import com.visa.visa_backoffice.model.Utilisateur;
+import com.visa.visa_backoffice.repository.SituationFamilialeRepository;
 import com.visa.visa_backoffice.repository.StatutRepository;
 import com.visa.visa_backoffice.repository.TypeDemandeRepository;
 import com.visa.visa_backoffice.repository.TypeVisaRepository;
@@ -19,17 +20,20 @@ public class AuthService {
     private final StatutRepository statutRepository;
     private final TypeVisaRepository typeVisaRepository;
     private final TypeDemandeRepository typeDemandeRepository;
+    private final SituationFamilialeRepository situationFamilialeRepository;
     private final JwtService jwtService;
 
     public AuthService(UtilisateurRepository utilisateurRepository,
                        StatutRepository statutRepository,
                        TypeVisaRepository typeVisaRepository,
                        TypeDemandeRepository typeDemandeRepository,
+                       SituationFamilialeRepository situationFamilialeRepository,
                        JwtService jwtService) {
         this.utilisateurRepository = utilisateurRepository;
         this.statutRepository = statutRepository;
         this.typeVisaRepository = typeVisaRepository;
         this.typeDemandeRepository = typeDemandeRepository;
+        this.situationFamilialeRepository = situationFamilialeRepository;
         this.jwtService = jwtService;
     }
 
@@ -59,6 +63,10 @@ public class AuthService {
                 .map(t -> new NomenclatureItem(t.getId(), t.getLibelle()))
                 .toList();
 
+        List<NomenclatureItem> situationsFamiliales = situationFamilialeRepository.findAll().stream()
+                .map(s -> new NomenclatureItem(s.getId(), s.getLibelle()))
+                .toList();
+
         return new LoginResponse(
                 token,
                 user.getId(),
@@ -67,7 +75,8 @@ public class AuthService {
                 permissions,
                 statuts,
                 typeVisa,
-                typeDemande
+                typeDemande,
+                situationsFamiliales
         );
     }
 }

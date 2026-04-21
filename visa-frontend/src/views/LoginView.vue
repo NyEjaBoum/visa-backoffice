@@ -31,6 +31,7 @@ async function handleLogin() {
     localStorage.setItem('statuts', JSON.stringify(data.statuts))
     localStorage.setItem('typeVisa', JSON.stringify(data.typeVisa))
     localStorage.setItem('typeDemande', JSON.stringify(data.typeDemande))
+    localStorage.setItem('situationsFamiliales', JSON.stringify(data.situationsFamiliales))
 
     router.push('/dashboard')
   } catch (err) {

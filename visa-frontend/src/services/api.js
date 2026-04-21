@@ -38,6 +38,19 @@ export async function getPiecesByTypeVisa(typeVisaId) {
   return handleResponse(res)
 }
 
+export async function getSituationsFamiliales() {
+  const res = await fetch(`${BASE}/nomenclatures/situation-familiale`, { headers: authHeaders() })
+  return handleResponse(res)
+}
+
+export async function validateDossier(dossierId) {
+  const res = await fetch(`${BASE}/dossiers/${dossierId}/valider`, {
+    method: 'PUT',
+    headers: authHeaders()
+  })
+  return handleResponse(res)
+}
+
 export async function searchIndividus(q) {
   const query = (q || '').trim()
   if (!query) return []

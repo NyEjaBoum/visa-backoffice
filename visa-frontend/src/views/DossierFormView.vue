@@ -1,13 +1,14 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { createDossier, getPiecesCommunes, getPiecesByTypeVisa, searchIndividus } from '../services/api.js'
+import { createDossier, getPiecesCommunes, getPiecesByTypeVisa, getSituationsFamiliales, searchIndividus } from '../services/api.js'
 import SideNav from '../components/SideNav.vue'
 
 const router = useRouter()
 
 const typeDemandeList = JSON.parse(localStorage.getItem('typeDemande') || '[]')
 const typeVisaList = JSON.parse(localStorage.getItem('typeVisa') || '[]')
+const situationsFamiliales = ref(JSON.parse(localStorage.getItem('situationsFamiliales') || '[]'))
 
 const form = ref({
   typeDemandeId: typeDemandeList[0]?.id ?? null,
@@ -15,7 +16,7 @@ const form = ref({
   prenoms: '',
   nomJeuneFille: '',
   dateNaissance: '',
-  situationFamiliale: '',
+  situationFamilialeId: null,
   nationalite: '',
   profession: '',
   adresseMada: '',
@@ -23,7 +24,7 @@ const form = ref({
   numeroPasseport: '',
   dateDelivrancePasseport: '',
   dateExpirationPasseport: '',
-  refVisaTransformable: '',
+  numeroVisaTransformable: '',
   dateEntree: '',
   lieuEntree: '',
   dateFinVisa: '',
@@ -76,7 +77,7 @@ function selectIndividuSuggestion(item) {
   form.value.prenoms = item.prenom || ''
   form.value.nomJeuneFille = item.nomJeuneFille || ''
   form.value.dateNaissance = item.dateNaissance || ''
-  form.value.situationFamiliale = item.situationFamiliale || ''
+  form.value.situationFamilialeId = item.situationFamilialeId ?? null
   form.value.nationalite = item.nationalite || ''
   form.value.profession = item.profession || ''
   form.value.adresseMada = item.adresseMada || ''
@@ -137,6 +138,15 @@ watch(individuQuery, (q) => {
 })
 
 onMounted(async () => {
+  if (!Array.isArray(situationsFamiliales.value) || situationsFamiliales.value.length === 0) {
+    try {
+      const list = await getSituationsFamiliales()
+      situationsFamiliales.value = Array.isArray(list) ? list : []
+      localStorage.setItem('situationsFamiliales', JSON.stringify(situationsFamiliales.value))
+    } catch {
+      situationsFamiliales.value = []
+    }
+  }
   await loadPiecesCommunes()
   await loadPiecesSpecifiques(form.value.typeVisaId)
 })
@@ -178,10 +188,10 @@ function newDossier() {
   form.value = {
     typeDemandeId: typeDemandeList[0]?.id ?? null,
     nom: '', prenoms: '', nomJeuneFille: '', dateNaissance: '',
-    situationFamiliale: '', nationalite: '', profession: '',
+    situationFamilialeId: null, nationalite: '', profession: '',
     adresseMada: '', contactMada: '',
     numeroPasseport: '', dateDelivrancePasseport: '', dateExpirationPasseport: '',
-    refVisaTransformable: '', dateEntree: '', lieuEntree: '', dateFinVisa: '',
+    numeroVisaTransformable: '', dateEntree: '', lieuEntree: '', dateFinVisa: '',
     typeVisaId: typeVisaList[0]?.id ?? null,
   }
   errorMsg.value = ''
@@ -202,7 +212,7 @@ function newDossier() {
 
     <div class="page-wrapper">
 
-      <!-- Header bar (form.html exact) -->
+      <!-- Header bar -->
       <header class="page-header">
         <div class="header-left">
           <router-link to="/dashboard" class="close-btn" title="Retour">
@@ -324,12 +334,9 @@ function newDossier() {
               </div>
               <div>
                 <label class="field-label">Situation familiale</label>
-                <select class="field-input" v-model="form.situationFamiliale">
-                  <option value="">— Sélectionner —</option>
-                  <option value="CELIBATAIRE">Célibataire</option>
-                  <option value="MARIE">Marié(e)</option>
-                  <option value="DIVORCE">Divorcé(e)</option>
-                  <option value="VEUF">Veuf / Veuve</option>
+                <select class="field-input" v-model="form.situationFamilialeId">
+                  <option :value="null">— Sélectionner —</option>
+                  <option v-for="s in situationsFamiliales" :key="s.id" :value="s.id">{{ s.libelle }}</option>
                 </select>
               </div>
               <div>
@@ -378,8 +385,8 @@ function newDossier() {
                 <span v-if="passportExpired" class="field-warn-text">Attention : passeport expiré</span>
               </div>
               <div>
-                <label class="field-label">Réf. Visa Transformable <span>*</span></label>
-                <input type="text" class="field-input" v-model="form.refVisaTransformable" placeholder="Numéro du visa actuel" required />
+                <label class="field-label">Réf. Visa Transformable</label>
+                <input type="text" class="field-input" v-model="form.numeroVisaTransformable" placeholder="Numéro du visa actuel" />
               </div>
               <div>
                 <label class="field-label">Date d'entrée à Madagascar</label>
@@ -398,7 +405,6 @@ function newDossier() {
 
           <div class="paper-divider"></div>
 
-          <!-- Submit dans le header, mais aussi en bas -->
           <div class="form-footer">
             <span v-if="passportExpired" class="warn-badge">Passeport expiré — enregistrement toujours possible</span>
             <button type="submit" class="btn-save" :disabled="loading">
@@ -464,7 +470,6 @@ function newDossier() {
   overflow: hidden;
 }
 
-/* Header (form.html exact) */
 .page-header {
   background: white;
   padding: 12px 24px;
@@ -505,7 +510,6 @@ function newDossier() {
   color: #64748b;
 }
 
-/* Nav tabs (form.html exact) */
 .nav-tabs {
   display: flex;
   background: #f8fafc;
@@ -556,7 +560,6 @@ function newDossier() {
 .btn-save:hover:not(:disabled) { opacity: 0.88; }
 .btn-save:disabled { background: #cbd5e1; cursor: not-allowed; }
 
-/* Canvas */
 .canvas {
   flex: 1;
   padding: 32px 40px;
@@ -573,7 +576,6 @@ function newDossier() {
   margin-bottom: 20px;
 }
 
-/* Form paper (form.html exact) */
 .form-paper {
   background: white;
   max-width: 860px;
@@ -606,7 +608,6 @@ function newDossier() {
   margin: 0 40px;
 }
 
-/* Form grid (form.html exact) */
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -691,7 +692,6 @@ function newDossier() {
 .field-warn-input { border-color: #f59e0b !important; }
 .field-warn-text { font-size: 12px; color: #d97706; font-weight: 500; margin-top: 4px; display: block; }
 
-/* Form footer */
 .form-footer {
   padding: 24px 40px 32px;
   display: flex;
@@ -710,7 +710,6 @@ function newDossier() {
   border-radius: 6px;
 }
 
-/* Checklist */
 .checklist-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -757,7 +756,6 @@ function newDossier() {
   font-style: italic;
 }
 
-/* Success */
 .success-paper {
   background: white;
   max-width: 860px;

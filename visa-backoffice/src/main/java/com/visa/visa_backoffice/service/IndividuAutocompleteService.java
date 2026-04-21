@@ -9,6 +9,7 @@ import java.util.List;
 
 @Service
 public class IndividuAutocompleteService {
+
     @Autowired
     private IndividuAutocompleteRepository individuAutocompleteRepository;
 
@@ -25,9 +26,8 @@ public class IndividuAutocompleteService {
             dto.setPasseportNumero((String) row[5]);
             dto.setDateDelivrance(row[6] != null ? row[6].toString() : null);
             dto.setDateExpiration(row[7] != null ? row[7].toString() : null);
-
             dto.setNomJeuneFille((String) row[8]);
-            dto.setSituationFamiliale((String) row[9]);
+            dto.setSituationFamilialeId(row[9] != null ? ((Number) row[9]).intValue() : null);
             dto.setNationalite((String) row[10]);
             dto.setProfession((String) row[11]);
             dto.setAdresseMada((String) row[12]);

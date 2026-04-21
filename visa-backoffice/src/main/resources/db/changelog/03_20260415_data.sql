@@ -8,7 +8,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- 2. Les Statuts (ID fixes : indispensable pour la logique Java)
 INSERT INTO statut (id, libelle) VALUES
-(1, 'CREE'),
+(1,  'CREE'),
 (10, 'VALIDE'),
 (20, 'ANNULE')
 ON CONFLICT (id) DO NOTHING;
@@ -21,19 +21,28 @@ INSERT INTO type_demande_visa (id, libelle) VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- 4. Les Categories de Visa (ID fixes pour la checklist dynamique)
+--    Ce sont les categories de l'etranger, pas les documents emis
 INSERT INTO type_visa (id, libelle) VALUES
 (1, 'ETUDIANT'),
 (2, 'TRAVAILLEUR'),
 (3, 'INVESTISSEUR')
 ON CONFLICT (id) DO NOTHING;
 
--- 5. Les actions autorisees
+-- 5. Situations familiales
+INSERT INTO situation_familiale (id, libelle) VALUES
+(1, 'CELIBATAIRE'),
+(2, 'MARIE'),
+(3, 'DIVORCE'),
+(4, 'VEUF')
+ON CONFLICT (id) DO NOTHING;
+
+-- 6. Les actions autorisees
 INSERT INTO role_action (id_role, nom_action) VALUES
 (1, 'SELECT'), (1, 'INSERT'), (1, 'UPDATE'), (1, 'DELETE'), (1, 'CREATE'),
 (2, 'SELECT'), (2, 'INSERT'), (2, 'UPDATE')
 ON CONFLICT DO NOTHING;
 
--- 6. Utilisateur de test (Admin lie a l'ID 1)
-INSERT INTO utilisateur (identifiant, mdp, id_role) VALUES 
+-- 7. Utilisateur de test (Admin lie a l'ID 1)
+INSERT INTO utilisateur (identifiant, mdp, id_role) VALUES
 ('admin', 'test', 1)
 ON CONFLICT (identifiant) DO NOTHING;
