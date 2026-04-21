@@ -1,6 +1,7 @@
 package com.visa.visa_backoffice.dto;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public record CreateDossierRequest(
         Integer typeDemandeId,
@@ -20,5 +21,6 @@ public record CreateDossierRequest(
         String refVisaTransformable,
         LocalDate dateEntree,
         String lieuEntree,
-        LocalDate dateFinVisa
+        LocalDate dateFinVisa,
+        List<PieceFournieItem> piecesFournies
 ) {}

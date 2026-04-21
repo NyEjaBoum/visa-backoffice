@@ -37,3 +37,13 @@ export async function getPiecesByTypeVisa(typeVisaId) {
   const res = await fetch(`${BASE}/nomenclatures/pieces/${typeVisaId}`, { headers: authHeaders() })
   return handleResponse(res)
 }
+
+export async function searchIndividus(q) {
+  const query = (q || '').trim()
+  if (!query) return []
+
+  const res = await fetch(`${BASE}/individus/search?q=${encodeURIComponent(query)}`, {
+    headers: authHeaders()
+  })
+  return handleResponse(res)
+}

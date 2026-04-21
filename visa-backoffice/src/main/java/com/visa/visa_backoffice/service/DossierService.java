@@ -2,6 +2,7 @@ package com.visa.visa_backoffice.service;
 
 import com.visa.visa_backoffice.dto.CreateDossierRequest;
 import com.visa.visa_backoffice.dto.CreateDossierResponse;
+import com.visa.visa_backoffice.dto.PieceFournieItem;
 import com.visa.visa_backoffice.model.*;
 import com.visa.visa_backoffice.repository.*;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,7 @@ public class DossierService {
     private final IndividuRepository individuRepository;
     private final PasseportRepository passeportRepository;
     private final DemandeVisaRepository demandeVisaRepository;
+    private final PieceFournieRepository pieceFournieRepository;
     private final TypeDemandeRepository typeDemandeRepository;
     private final TypeVisaRepository typeVisaRepository;
     private final StatutRepository statutRepository;
@@ -27,12 +29,14 @@ public class DossierService {
     public DossierService(IndividuRepository individuRepository,
                           PasseportRepository passeportRepository,
                           DemandeVisaRepository demandeVisaRepository,
+                          PieceFournieRepository pieceFournieRepository,
                           TypeDemandeRepository typeDemandeRepository,
                           TypeVisaRepository typeVisaRepository,
                           StatutRepository statutRepository) {
         this.individuRepository = individuRepository;
         this.passeportRepository = passeportRepository;
         this.demandeVisaRepository = demandeVisaRepository;
+        this.pieceFournieRepository = pieceFournieRepository;
         this.typeDemandeRepository = typeDemandeRepository;
         this.typeVisaRepository = typeVisaRepository;
         this.statutRepository = statutRepository;
@@ -85,6 +89,19 @@ public class DossierService {
         dossier.setDateCreation(LocalDateTime.now());
 
         DemandeVisa savedDossier = demandeVisaRepository.save(dossier);
+
+        if (request.piecesFournies() != null && !request.piecesFournies().isEmpty()) {
+            for (PieceFournieItem item : request.piecesFournies()) {
+                if (item == null) continue;
+                if (isBlank(item.libellePiece())) continue;
+
+                PieceFournie pf = new PieceFournie();
+                pf.setDemande(savedDossier);
+                pf.setLibellePiece(item.libellePiece().trim());
+                pf.setPresent(Boolean.TRUE.equals(item.isPresent()));
+                pieceFournieRepository.save(pf);
+            }
+        }
 
         return new CreateDossierResponse(
                 savedDossier.getId(),

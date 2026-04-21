@@ -9,5 +9,6 @@
     <include file="02_20260415_setup_persistance.sql" relativeToChangelogFile="true"/>
     <include file="03_20260415_data.sql" relativeToChangelogFile="true"/>
     <include file="04_20260421_us03_pieces_checklist.sql" relativeToChangelogFile="true"/>
+    <include file="05_20260421_us03_info_individu_complet.sql" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

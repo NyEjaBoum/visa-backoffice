@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { createDossier, getPiecesCommunes, getPiecesByTypeVisa } from '../services/api.js'
+import { createDossier, getPiecesCommunes, getPiecesByTypeVisa, searchIndividus } from '../services/api.js'
 import SideNav from '../components/SideNav.vue'
 
 const router = useRouter()
@@ -40,6 +40,14 @@ const piecesSpecifiques = ref([])
 const checklistCommune = ref([])
 const checklistSpecifique = ref([])
 
+const individuQuery = ref('')
+const individuSuggestions = ref([])
+const individuSearching = ref(false)
+const individuSearchError = ref('')
+const showIndividuSuggestions = ref(false)
+let individuSearchTimer = null
+let individuSearchSeq = 0
+
 const passportExpired = computed(() => {
   if (!form.value.dateExpirationPasseport) return false
   return new Date(form.value.dateExpirationPasseport) < new Date()
@@ -49,6 +57,37 @@ const selectedTypeVisaLabel = computed(() => {
   const found = typeVisaList.find(t => t.id === form.value.typeVisaId)
   return found?.libelle?.toUpperCase() || ''
 })
+
+function formatIndividuSuggestion(item) {
+  const nom = (item?.nom || '').trim()
+  const prenom = (item?.prenom || '').trim()
+  const dateNaissance = (item?.dateNaissance || '').trim()
+  const passeportNumero = (item?.passeportNumero || '').trim()
+
+  const label = `${nom}${prenom ? ' ' + prenom : ''}`.trim()
+  const extras = [dateNaissance, passeportNumero].filter(Boolean).join(' · ')
+  return extras ? `${label} — ${extras}` : label
+}
+
+function selectIndividuSuggestion(item) {
+  if (!item) return
+
+  form.value.nom = (item.nom || '').toUpperCase()
+  form.value.prenoms = item.prenom || ''
+  form.value.nomJeuneFille = item.nomJeuneFille || ''
+  form.value.dateNaissance = item.dateNaissance || ''
+  form.value.situationFamiliale = item.situationFamiliale || ''
+  form.value.nationalite = item.nationalite || ''
+  form.value.profession = item.profession || ''
+  form.value.adresseMada = item.adresseMada || ''
+  form.value.contactMada = item.contact || ''
+  form.value.numeroPasseport = item.passeportNumero || ''
+  form.value.dateDelivrancePasseport = item.dateDelivrance || ''
+  form.value.dateExpirationPasseport = item.dateExpiration || ''
+
+  individuQuery.value = `${item.nom || ''} ${item.prenom || ''}`.trim()
+  showIndividuSuggestions.value = false
+}
 
 async function loadPiecesCommunes() {
   try {
@@ -67,6 +106,36 @@ async function loadPiecesSpecifiques(typeVisaId) {
 
 watch(() => form.value.typeVisaId, (newId) => loadPiecesSpecifiques(newId))
 
+watch(individuQuery, (q) => {
+  individuSearchError.value = ''
+  const query = (q || '').trim()
+
+  if (individuSearchTimer) clearTimeout(individuSearchTimer)
+  if (query.length < 2) {
+    individuSuggestions.value = []
+    individuSearching.value = false
+    return
+  }
+
+  individuSearchTimer = setTimeout(async () => {
+    const seq = ++individuSearchSeq
+    individuSearching.value = true
+    try {
+      const results = await searchIndividus(query)
+      if (seq !== individuSearchSeq) return
+      individuSuggestions.value = Array.isArray(results) ? results : []
+      showIndividuSuggestions.value = true
+    } catch (err) {
+      if (seq !== individuSearchSeq) return
+      individuSuggestions.value = []
+      individuSearchError.value = err?.message || 'Erreur de recherche'
+      showIndividuSuggestions.value = true
+    } finally {
+      if (seq === individuSearchSeq) individuSearching.value = false
+    }
+  }, 250)
+})
+
 onMounted(async () => {
   await loadPiecesCommunes()
   await loadPiecesSpecifiques(form.value.typeVisaId)
@@ -76,6 +145,17 @@ async function handleSubmit() {
   errorMsg.value = ''
   loading.value = true
   try {
+    const piecesFournies = [
+      ...piecesCommunes.value.map((libellePiece, i) => ({
+        libellePiece,
+        isPresent: Boolean(checklistCommune.value[i])
+      })),
+      ...piecesSpecifiques.value.map((libellePiece, i) => ({
+        libellePiece,
+        isPresent: Boolean(checklistSpecifique.value[i])
+      }))
+    ]
+
     const payload = {
       ...form.value,
       dateNaissance: form.value.dateNaissance || null,
@@ -83,6 +163,7 @@ async function handleSubmit() {
       dateExpirationPasseport: form.value.dateExpirationPasseport || null,
       dateEntree: form.value.dateEntree || null,
       dateFinVisa: form.value.dateFinVisa || null,
+      piecesFournies,
     }
     successDossier.value = await createDossier(payload)
   } catch (err) {
@@ -106,6 +187,12 @@ function newDossier() {
   errorMsg.value = ''
   checklistCommune.value = piecesCommunes.value.map(() => false)
   loadPiecesSpecifiques(form.value.typeVisaId)
+
+  individuQuery.value = ''
+  individuSuggestions.value = []
+  individuSearching.value = false
+  individuSearchError.value = ''
+  showIndividuSuggestions.value = false
 }
 </script>
 
@@ -189,6 +276,36 @@ function newDossier() {
             <p class="section-desc">Informations personnelles du demandeur</p>
 
             <div class="form-grid">
+              <div class="full-width">
+                <label class="field-label">Rechercher un individu</label>
+                <div class="autocomplete">
+                  <input
+                    type="text"
+                    class="field-input"
+                    v-model="individuQuery"
+                    placeholder="Tapez au moins 2 lettres (nom ou prénom)"
+                    @focus="showIndividuSuggestions = true"
+                    @blur="setTimeout(() => (showIndividuSuggestions = false), 120)"
+                  />
+                  <div v-if="showIndividuSuggestions" class="autocomplete-panel">
+                    <div v-if="individuSearching" class="autocomplete-row muted">Recherche…</div>
+                    <div v-else-if="individuSearchError" class="autocomplete-row error">{{ individuSearchError }}</div>
+                    <button
+                      v-else
+                      v-for="item in individuSuggestions"
+                      :key="item.individuId || formatIndividuSuggestion(item)"
+                      type="button"
+                      class="autocomplete-row"
+                      @mousedown.prevent="selectIndividuSuggestion(item)"
+                    >
+                      {{ formatIndividuSuggestion(item) }}
+                    </button>
+                    <div v-if="!individuSearching && !individuSearchError && individuSuggestions.length === 0" class="autocomplete-row muted">
+                      Aucun résultat.
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div>
                 <label class="field-label">Nom <span>*</span></label>
                 <input type="text" class="field-input" v-model="form.nom" placeholder="NOM" required />
@@ -526,6 +643,49 @@ function newDossier() {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
   background: white;
+}
+
+.autocomplete {
+  position: relative;
+}
+
+.autocomplete-panel {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.autocomplete-row {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  background: white;
+  color: #1e293b;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.autocomplete-row:hover {
+  background: #f8fafc;
+}
+
+.autocomplete-row.muted {
+  cursor: default;
+  color: #64748b;
+}
+
+.autocomplete-row.error {
+  cursor: default;
+  color: #b91c1c;
+  background: #fef2f2;
 }
 
 .field-warn-input { border-color: #f59e0b !important; }
