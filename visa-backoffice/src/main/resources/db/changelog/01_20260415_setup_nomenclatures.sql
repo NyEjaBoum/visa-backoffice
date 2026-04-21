@@ -18,6 +18,12 @@ CREATE TABLE type_visa (
     libelle VARCHAR(100) NOT NULL
 );
 
+-- Situation familiale (referentiel)
+CREATE TABLE situation_familiale (
+    id INTEGER PRIMARY KEY,
+    libelle VARCHAR(100) NOT NULL
+);
+
 -- Profils et Droits (JWT)
 CREATE TABLE role (
     id SERIAL PRIMARY KEY,
@@ -27,5 +33,5 @@ CREATE TABLE role (
 CREATE TABLE role_action (
     id SERIAL PRIMARY KEY,
     id_role INTEGER REFERENCES role(id) ON DELETE CASCADE,
-    nom_action VARCHAR(50) NOT NULL -- ex: 'CREATE', 'INSERT', etc.
+    nom_action VARCHAR(50) NOT NULL
 );

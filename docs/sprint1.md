@@ -35,7 +35,7 @@ Mettre en place l'authentification sécurisée et le formulaire de création de 
 
 * **Écran** : Menu déroulant pour choisir le Type de Visa (Investisseur / Travailleur). Une liste de cases à cocher (checklist) apparaît dynamiquement selon ce choix.
 * **Scénario** : L'agent vérifie physiquement les documents apportés par l'étranger et coche les cases correspondantes dans l'interface.
-* **Métier** : Récupération des types de visa depuis la session. Vérification de la présence de toutes les pièces obligatoires avant de permettre l'enregistrement final en base.
+* **Métier** : Récupération des types de visa. Vérification de la présence de toutes les pièces obligatoires avant de permettre l'enregistrement final en base.
 * **Base** : `type_visa`, `piece_fournie`.
 
 ---

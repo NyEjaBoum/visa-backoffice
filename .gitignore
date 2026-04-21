@@ -34,3 +34,8 @@ build/
 
 # Local environment configuration
 visa-backoffice/src/main/resources/application.properties
+
+# Frontend
+visa-frontend/node_modules/
+visa-frontend/dist/
+visa-frontend/.env.local

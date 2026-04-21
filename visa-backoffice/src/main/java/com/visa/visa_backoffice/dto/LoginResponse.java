@@ -10,5 +10,6 @@ public record LoginResponse(
     List<String> permissions,
     List<NomenclatureItem> statuts,
     List<NomenclatureItem> typeVisa,
-    List<NomenclatureItem> typeDemande
+    List<NomenclatureItem> typeDemande,
+    List<NomenclatureItem> situationsFamiliales
 ) {}

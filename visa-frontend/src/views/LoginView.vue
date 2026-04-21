@@ -31,6 +31,7 @@ async function handleLogin() {
     localStorage.setItem('statuts', JSON.stringify(data.statuts))
     localStorage.setItem('typeVisa', JSON.stringify(data.typeVisa))
     localStorage.setItem('typeDemande', JSON.stringify(data.typeDemande))
+    localStorage.setItem('situationsFamiliales', JSON.stringify(data.situationsFamiliales))
 
     router.push('/dashboard')
   } catch (err) {
@@ -42,7 +43,7 @@ async function handleLogin() {
 </script>
 
 <template>
-  <div class="main-container">
+  <div class="login-page"><div class="main-container">
     <div class="login-section">
       <div class="form-wrapper">
         <div class="logo">
@@ -89,5 +90,5 @@ async function handleLogin() {
     </div>
 
     <div class="hero-section hero-image-bg"></div>
-  </div>
+  </div></div>
 </template>
