@@ -28,6 +28,16 @@ export async function getDashboardStats() {
   return handleResponse(res)
 }
 
+export async function getDossiers() {
+  const res = await fetch(`${BASE}/dossiers`, { headers: authHeaders() })
+  return handleResponse(res)
+}
+
+export async function getDossier(dossierId) {
+  const res = await fetch(`${BASE}/dossiers/${dossierId}`, { headers: authHeaders() })
+  return handleResponse(res)
+}
+
 export async function getPiecesCommunes() {
   const res = await fetch(`${BASE}/nomenclatures/pieces/communes`, { headers: authHeaders() })
   return handleResponse(res)
@@ -48,6 +58,16 @@ export async function validateDossier(dossierId) {
     method: 'PUT',
     headers: authHeaders()
   })
+  return handleResponse(res)
+}
+
+export async function getIndividusComplets() {
+  const res = await fetch(`${BASE}/individus/complets`, { headers: authHeaders() })
+  return handleResponse(res)
+}
+
+export async function getIndividuComplet(individuId) {
+  const res = await fetch(`${BASE}/individus/${individuId}/complet`, { headers: authHeaders() })
   return handleResponse(res)
 }
 

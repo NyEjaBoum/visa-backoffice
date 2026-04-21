@@ -8,7 +8,6 @@ import com.visa.visa_backoffice.dto.PieceFournieItem;
 import com.visa.visa_backoffice.dto.PieceFournieDTO;
 import com.visa.visa_backoffice.dto.ValiderDossierResponse;
 import com.visa.visa_backoffice.model.*;
-import com.visa.visa_backoffice.repository.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,59 +24,53 @@ public class DossierService {
     private static final int STATUT_VALIDE_ID  = 10;
     private static final int STATUT_ANNULE_ID  = 20;
 
-    private final IndividuRepository individuRepository;
-    private final PasseportRepository passeportRepository;
-    private final DemandeVisaRepository demandeVisaRepository;
-    private final PieceFournieRepository pieceFournieRepository;
-    private final TypeDemandeRepository typeDemandeRepository;
-    private final TypeVisaRepository typeVisaRepository;
-    private final StatutRepository statutRepository;
-    private final SituationFamilialeRepository situationFamilialeRepository;
-    private final VisaTransformableRepository visaTransformableRepository;
-    private final VisaRepository visaRepository;
-    private final CarteResidentRepository carteResidentRepository;
+    private final IndividuService individuService;
+    private final PasseportService passeportService;
+    private final DemandeVisaService demandeVisaService;
+    private final PieceFournieService pieceFournieService;
+    private final TypeDemandeService typeDemandeService;
+    private final TypeVisaService typeVisaService;
+    private final StatutService statutService;
+    private final SituationFamilialeService situationFamilialeService;
+    private final VisaTransformableService visaTransformableService;
+    private final VisaService visaService;
+    private final CarteResidentService carteResidentService;
 
-    public DossierService(IndividuRepository individuRepository,
-                          PasseportRepository passeportRepository,
-                          DemandeVisaRepository demandeVisaRepository,
-                          PieceFournieRepository pieceFournieRepository,
-                          TypeDemandeRepository typeDemandeRepository,
-                          TypeVisaRepository typeVisaRepository,
-                          StatutRepository statutRepository,
-                          SituationFamilialeRepository situationFamilialeRepository,
-                          VisaTransformableRepository visaTransformableRepository,
-                          VisaRepository visaRepository,
-                          CarteResidentRepository carteResidentRepository) {
-        this.individuRepository = individuRepository;
-        this.passeportRepository = passeportRepository;
-        this.demandeVisaRepository = demandeVisaRepository;
-        this.pieceFournieRepository = pieceFournieRepository;
-        this.typeDemandeRepository = typeDemandeRepository;
-        this.typeVisaRepository = typeVisaRepository;
-        this.statutRepository = statutRepository;
-        this.situationFamilialeRepository = situationFamilialeRepository;
-        this.visaTransformableRepository = visaTransformableRepository;
-        this.visaRepository = visaRepository;
-        this.carteResidentRepository = carteResidentRepository;
+    public DossierService(IndividuService individuService,
+                          PasseportService passeportService,
+                          DemandeVisaService demandeVisaService,
+                          PieceFournieService pieceFournieService,
+                          TypeDemandeService typeDemandeService,
+                          TypeVisaService typeVisaService,
+                          StatutService statutService,
+                          SituationFamilialeService situationFamilialeService,
+                          VisaTransformableService visaTransformableService,
+                          VisaService visaService,
+                          CarteResidentService carteResidentService) {
+        this.individuService = individuService;
+        this.passeportService = passeportService;
+        this.demandeVisaService = demandeVisaService;
+        this.pieceFournieService = pieceFournieService;
+        this.typeDemandeService = typeDemandeService;
+        this.typeVisaService = typeVisaService;
+        this.statutService = statutService;
+        this.situationFamilialeService = situationFamilialeService;
+        this.visaTransformableService = visaTransformableService;
+        this.visaService = visaService;
+        this.carteResidentService = carteResidentService;
     }
 
     @Transactional
     public CreateDossierResponse createDossier(CreateDossierRequest request) {
         validateRequest(request);
 
-        TypeDemande typeDemande = typeDemandeRepository.findById(request.typeDemandeId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de demande introuvable"));
-
-        TypeVisa typeVisa = typeVisaRepository.findById(request.typeVisaId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de visa introuvable"));
-
-        Statut statutCree = statutRepository.findById(STATUT_CREE_ID)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Statut CREE non configure"));
+        TypeDemande typeDemande = typeDemandeService.getOrThrow(request.typeDemandeId());
+        TypeVisa typeVisa = typeVisaService.getOrThrow(request.typeVisaId());
+        Statut statutCree = statutService.getRequired(STATUT_CREE_ID, "Statut CREE non configure");
 
         SituationFamiliale situationFamiliale = null;
         if (request.situationFamilialeId() != null) {
-            situationFamiliale = situationFamilialeRepository.findById(request.situationFamilialeId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Situation familiale introuvable"));
+            situationFamiliale = situationFamilialeService.getOrThrow(request.situationFamilialeId());
         }
 
         Individu individu = new Individu();
@@ -90,7 +83,7 @@ public class DossierService {
         individu.setProfession(safeTrim(request.profession()));
         individu.setAdresseMada(safeTrim(request.adresseMada()));
         individu.setContactMada(safeTrim(request.contactMada()));
-        Individu savedIndividu = individuRepository.save(individu);
+        Individu savedIndividu = individuService.create(individu);
 
         Passeport passeport = new Passeport();
         passeport.setIndividu(savedIndividu);
@@ -98,12 +91,12 @@ public class DossierService {
         passeport.setDateDelivrance(request.dateDelivrancePasseport());
         passeport.setDateExpiration(request.dateExpirationPasseport());
         passeport.setActive(true);
-        Passeport savedPasseport = passeportRepository.save(passeport);
+        Passeport savedPasseport = passeportService.create(passeport);
 
         VisaTransformable visaTransformable = null;
         if (!isBlank(request.numeroVisaTransformable())) {
             String ref = request.numeroVisaTransformable().trim();
-            visaTransformable = visaTransformableRepository.findByNumeroReference(ref)
+            visaTransformable = visaTransformableService.findByNumeroReference(ref)
                     .orElseGet(() -> {
                         VisaTransformable vt = new VisaTransformable();
                         vt.setIndividu(savedIndividu);
@@ -112,7 +105,7 @@ public class DossierService {
                         vt.setDateEntree(request.dateEntree());
                         vt.setLieuEntree(request.lieuEntree());
                         vt.setDateFinVisa(request.dateFinVisa());
-                        return visaTransformableRepository.save(vt);
+                        return visaTransformableService.create(vt);
                     });
 
             if (request.dateEntree() != null) {
@@ -125,7 +118,7 @@ public class DossierService {
                 visaTransformable.setDateFinVisa(request.dateFinVisa());
             }
 
-            visaTransformable = visaTransformableRepository.save(visaTransformable);
+            visaTransformable = visaTransformableService.create(visaTransformable);
         }
 
         DemandeVisa dossier = new DemandeVisa();
@@ -137,7 +130,7 @@ public class DossierService {
         dossier.setStatut(statutCree);
         dossier.setVisaTransformable(visaTransformable);
         dossier.setDateCreation(LocalDateTime.now());
-        DemandeVisa savedDossier = demandeVisaRepository.save(dossier);
+        DemandeVisa savedDossier = demandeVisaService.create(dossier);
 
         if (request.piecesFournies() != null) {
             for (PieceFournieItem item : request.piecesFournies()) {
@@ -146,7 +139,7 @@ public class DossierService {
                 pf.setDemande(savedDossier);
                 pf.setLibellePiece(item.libellePiece().trim());
                 pf.setPresent(Boolean.TRUE.equals(item.isPresent()));
-                pieceFournieRepository.save(pf);
+                pieceFournieService.create(pf);
             }
         }
 
@@ -159,8 +152,7 @@ public class DossierService {
      */
     @Transactional
     public ValiderDossierResponse validerDossier(Integer dossierId) {
-        DemandeVisa dossier = demandeVisaRepository.findById(dossierId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dossier introuvable"));
+        DemandeVisa dossier = demandeVisaService.getOrThrow(dossierId);
 
         if (dossier.getStatut() != null && dossier.getStatut().getId() == STATUT_VALIDE_ID) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Ce dossier est deja valide");
@@ -169,11 +161,10 @@ public class DossierService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Un dossier annule ne peut pas etre valide");
         }
 
-        Statut statutValide = statutRepository.findById(STATUT_VALIDE_ID)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Statut VALIDE non configure"));
+        Statut statutValide = statutService.getRequired(STATUT_VALIDE_ID, "Statut VALIDE non configure");
 
         dossier.setStatut(statutValide);
-        demandeVisaRepository.save(dossier);
+        demandeVisaService.create(dossier);
 
         LocalDate dateDebut = LocalDate.now();
         LocalDate dateFin = dateDebut.plusYears(1);
@@ -184,7 +175,7 @@ public class DossierService {
         visa.setDateDebut(dateDebut);
         visa.setDateFin(dateFin);
         visa.setPasseport(dossier.getPasseport());
-        visaRepository.save(visa);
+        visaService.create(visa);
 
         CarteResident carte = new CarteResident();
         carte.setDemande(dossier);
@@ -192,7 +183,7 @@ public class DossierService {
         carte.setDateDebut(dateDebut);
         carte.setDateFin(dateFin);
         carte.setPasseport(dossier.getPasseport());
-        CarteResident savedCarte = carteResidentRepository.save(carte);
+        CarteResident savedCarte = carteResidentService.create(carte);
 
         return new ValiderDossierResponse(
                 dossier.getId(),
@@ -207,7 +198,7 @@ public class DossierService {
     private String generateNumeroDossier() {
         int year = LocalDate.now().getYear();
         String prefix = "MADA-" + year + "-";
-        int next = demandeVisaRepository.findTopByNumDemandeStartingWithOrderByNumDemandeDesc(prefix)
+        int next = demandeVisaService.findLastByNumeroPrefix(prefix)
                 .map(d -> d.getNumDemande().substring(prefix.length()))
                 .map(this::parseSafely)
                 .orElse(0) + 1;
@@ -217,7 +208,7 @@ public class DossierService {
     private String generateReferenceCarte() {
         int year = LocalDate.now().getYear();
         String prefix = "CR-" + year + "-";
-        int next = carteResidentRepository.findTopByReferenceStartingWithOrderByReferenceDesc(prefix)
+        int next = carteResidentService.findLastByReferencePrefix(prefix)
                 .map(c -> c.getReference().substring(prefix.length()))
                 .map(this::parseSafely)
                 .orElse(0) + 1;
@@ -227,7 +218,7 @@ public class DossierService {
     private String generateReferenceVisa() {
         int year = LocalDate.now().getYear();
         String prefix = "V-" + year + "-";
-        int next = visaRepository.findTopByReferenceStartingWithOrderByReferenceDesc(prefix)
+        int next = visaService.findLastByReferencePrefix(prefix)
                 .map(v -> v.getReference().substring(prefix.length()))
                 .map(this::parseSafely)
                 .orElse(0) + 1;
@@ -235,61 +226,60 @@ public class DossierService {
     }
 
     public int countDossiersByStatut(int statutId) {
-        return (int) demandeVisaRepository.findAll().stream()
+        return (int) demandeVisaService.findAll().stream()
                 .filter(d -> d.getStatut() != null && d.getStatut().getId() == statutId)
                 .count();
     }
 
-        @Transactional(readOnly = true)
-        public List<DossierListItemDTO> listDossiers() {
-        return demandeVisaRepository.findAllWithRefs().stream()
-            .map(d -> new DossierListItemDTO(
-                d.getId(),
-                d.getNumDemande(),
-                d.getIndividu() != null ? d.getIndividu().getNom() : null,
-                d.getIndividu() != null ? d.getIndividu().getPrenoms() : null,
-                d.getTypeVisa() != null ? d.getTypeVisa().getLibelle() : null,
-                d.getTypeDemande() != null ? d.getTypeDemande().getLibelle() : null,
-                d.getStatut() != null ? d.getStatut().getLibelle() : null,
-                d.getDateCreation()
-            ))
-            .toList();
-        }
+    @Transactional(readOnly = true)
+    public List<DossierListItemDTO> listDossiers() {
+        return demandeVisaService.findAllWithRefs().stream()
+                .map(d -> new DossierListItemDTO(
+                        d.getId(),
+                        d.getNumDemande(),
+                        d.getIndividu() != null ? d.getIndividu().getNom() : null,
+                        d.getIndividu() != null ? d.getIndividu().getPrenoms() : null,
+                        d.getTypeVisa() != null ? d.getTypeVisa().getLibelle() : null,
+                        d.getTypeDemande() != null ? d.getTypeDemande().getLibelle() : null,
+                        d.getStatut() != null ? d.getStatut().getLibelle() : null,
+                        d.getDateCreation()
+                ))
+                .toList();
+    }
 
-        @Transactional(readOnly = true)
-        public DossierDetailDTO getDossier(Integer id) {
-        DemandeVisa d = demandeVisaRepository.findByIdWithRefs(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dossier introuvable"));
+    @Transactional(readOnly = true)
+    public DossierDetailDTO getDossier(Integer id) {
+        DemandeVisa d = demandeVisaService.getWithRefsOrThrow(id);
 
-        List<PieceFournieDTO> pieces = pieceFournieRepository.findByDemandeIdOrderByIdAsc(id).stream()
-            .map(p -> new PieceFournieDTO(p.getId(), p.getLibellePiece(), p.getPresent()))
-            .toList();
+        List<PieceFournieDTO> pieces = pieceFournieService.findByDemandeId(id).stream()
+                .map(p -> new PieceFournieDTO(p.getId(), p.getLibellePiece(), p.getPresent()))
+                .toList();
 
         VisaTransformable vt = d.getVisaTransformable();
         Passeport pass = d.getPasseport();
         Individu ind = d.getIndividu();
 
         return new DossierDetailDTO(
-            d.getId(),
-            d.getNumDemande(),
-            d.getTypeVisa() != null ? d.getTypeVisa().getLibelle() : null,
-            d.getTypeDemande() != null ? d.getTypeDemande().getLibelle() : null,
-            d.getStatut() != null ? d.getStatut().getLibelle() : null,
-            d.getDateCreation(),
-            ind != null ? ind.getId() : null,
-            ind != null ? ind.getNom() : null,
-            ind != null ? ind.getPrenoms() : null,
-            ind != null ? ind.getDateNaissance() : null,
-            pass != null ? pass.getNumeroPass() : null,
-            pass != null ? pass.getDateDelivrance() : null,
-            pass != null ? pass.getDateExpiration() : null,
-            vt != null ? vt.getNumeroReference() : null,
-            vt != null ? vt.getDateEntree() : null,
-            vt != null ? vt.getLieuEntree() : null,
-            vt != null ? vt.getDateFinVisa() : null,
-            pieces
+                d.getId(),
+                d.getNumDemande(),
+                d.getTypeVisa() != null ? d.getTypeVisa().getLibelle() : null,
+                d.getTypeDemande() != null ? d.getTypeDemande().getLibelle() : null,
+                d.getStatut() != null ? d.getStatut().getLibelle() : null,
+                d.getDateCreation(),
+                ind != null ? ind.getId() : null,
+                ind != null ? ind.getNom() : null,
+                ind != null ? ind.getPrenoms() : null,
+                ind != null ? ind.getDateNaissance() : null,
+                pass != null ? pass.getNumeroPass() : null,
+                pass != null ? pass.getDateDelivrance() : null,
+                pass != null ? pass.getDateExpiration() : null,
+                vt != null ? vt.getNumeroReference() : null,
+                vt != null ? vt.getDateEntree() : null,
+                vt != null ? vt.getLieuEntree() : null,
+                vt != null ? vt.getDateFinVisa() : null,
+                pieces
         );
-        }
+    }
 
     private void validateRequest(CreateDossierRequest request) {
         if (request.typeDemandeId() == null)
