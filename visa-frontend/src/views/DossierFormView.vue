@@ -34,7 +34,6 @@ const form = ref({
 const loading = ref(false)
 const errorMsg = ref('')
 const successDossier = ref(null)
-const activeTab = ref('fields')
 
 const piecesCommunes = ref([])
 const piecesSpecifiques = ref([])
@@ -49,10 +48,7 @@ const showIndividuSuggestions = ref(false)
 let individuSearchTimer = null
 let individuSearchSeq = 0
 
-const passportExpired = computed(() => {
-  if (!form.value.dateExpirationPasseport) return false
-  return new Date(form.value.dateExpirationPasseport) < new Date()
-})
+
 
 const selectedTypeVisaLabel = computed(() => {
   const found = typeVisaList.find(t => t.id === form.value.typeVisaId)
@@ -226,11 +222,6 @@ function newDossier() {
           </div>
         </div>
 
-        <div class="nav-tabs">
-          <div class="nav-tab" :class="{ active: activeTab === 'fields' }" @click="activeTab = 'fields'">Formulaire</div>
-          <div class="nav-tab" :class="{ active: activeTab === 'checklist' }" @click="activeTab = 'checklist'">Checklist</div>
-        </div>
-
         <div class="header-right">
           <button type="submit" form="dossierForm" class="btn-save" :disabled="loading">
             {{ loading ? 'Enregistrement…' : 'Enregistrer' }}
@@ -261,8 +252,7 @@ function newDossier() {
 
         <p v-if="errorMsg" class="error-banner">{{ errorMsg }}</p>
 
-        <!-- Onglet Formulaire -->
-        <form v-show="activeTab === 'fields'" id="dossierForm" @submit.prevent="handleSubmit" class="form-paper">
+        <form id="dossierForm" @submit.prevent="handleSubmit" class="form-paper">
 
           <!-- Nature de la procédure -->
           <div class="paper-section">
@@ -380,9 +370,7 @@ function newDossier() {
                   type="date"
                   class="field-input"
                   v-model="form.dateExpirationPasseport"
-                  :class="{ 'field-warn-input': passportExpired }"
                 />
-                <span v-if="passportExpired" class="field-warn-text">Attention : passeport expiré</span>
               </div>
               <div>
                 <label class="field-label">Réf. Visa Transformable</label>
@@ -405,16 +393,7 @@ function newDossier() {
 
           <div class="paper-divider"></div>
 
-          <div class="form-footer">
-            <span v-if="passportExpired" class="warn-badge">Passeport expiré — enregistrement toujours possible</span>
-            <button type="submit" class="btn-save" :disabled="loading">
-              {{ loading ? 'Enregistrement…' : 'Enregistrer &amp; Générer le Numéro de Dossier' }}
-            </button>
-          </div>
-        </form>
-
-        <!-- Onglet Checklist -->
-        <div v-show="activeTab === 'checklist'" class="form-paper">
+          <!-- Section 3 : Dossiers à fournir -->
           <div class="paper-section">
             <h2>3. Dossiers à fournir</h2>
             <p class="section-desc">Cochez les pièces remises par le demandeur</p>
@@ -428,27 +407,34 @@ function newDossier() {
               </div>
             </div>
 
-            <div class="checklist-grid">
-              <div class="checklist-card">
-                <p class="checklist-heading">PIÈCES COMMUNES</p>
-                <label v-for="(piece, i) in piecesCommunes" :key="i" class="check-row">
-                  <input type="checkbox" v-model="checklistCommune[i]" />
-                  <span>{{ piece }}</span>
-                </label>
-                <p v-if="piecesCommunes.length === 0" class="check-empty">Chargement…</p>
+            <div class="checklist-card">
+              <label v-for="(piece, i) in piecesCommunes" :key="'c-' + i" class="check-row">
+                <input type="checkbox" v-model="checklistCommune[i]" />
+                <span>{{ piece }}</span>
+              </label>
+
+              <div v-if="piecesSpecifiques.length > 0" class="checklist-separator">
+                <span>{{ selectedTypeVisaLabel }}</span>
               </div>
 
-              <div class="checklist-card">
-                <p class="checklist-heading">PIÈCES COMPLÉMENTAIRES — {{ selectedTypeVisaLabel }}</p>
-                <label v-for="(piece, i) in piecesSpecifiques" :key="i" class="check-row">
-                  <input type="checkbox" v-model="checklistSpecifique[i]" />
-                  <span>{{ piece }}</span>
-                </label>
-                <p v-if="piecesSpecifiques.length === 0" class="check-empty">Aucune pièce spécifique.</p>
-              </div>
+              <label v-for="(piece, i) in piecesSpecifiques" :key="'s-' + i" class="check-row">
+                <input type="checkbox" v-model="checklistSpecifique[i]" />
+                <span>{{ piece }}</span>
+              </label>
+
+              <p v-if="piecesCommunes.length === 0 && piecesSpecifiques.length === 0" class="check-empty">Chargement…</p>
             </div>
           </div>
-        </div>
+
+          <div class="paper-divider"></div>
+
+          <div class="form-footer">
+            <!-- Suppression de l'avertissement passeport expiré -->
+            <button type="submit" class="btn-save" :disabled="loading">
+              {{ loading ? 'Enregistrement…' : 'Enregistrer &amp; Générer le Numéro de Dossier' }}
+            </button>
+          </div>
+        </form>
 
       </main>
     </div>
@@ -508,30 +494,6 @@ function newDossier() {
 .form-title p {
   font-size: 12px;
   color: #64748b;
-}
-
-.nav-tabs {
-  display: flex;
-  background: #f8fafc;
-  padding: 4px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-}
-
-.nav-tab {
-  padding: 6px 18px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  border-radius: 6px;
-  color: #64748b;
-  transition: all 0.15s;
-}
-
-.nav-tab.active {
-  background: white;
-  color: #1e293b;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .header-right {
@@ -710,27 +672,32 @@ function newDossier() {
   border-radius: 6px;
 }
 
-.checklist-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-top: 8px;
-}
-
 .checklist-card {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 20px;
   background: #fdfdfd;
+  margin-top: 8px;
 }
 
-.checklist-heading {
+.checklist-separator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 10px;
+  color: #64748b;
   font-size: 11px;
   font-weight: 700;
-  color: #1e293b;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  margin-bottom: 14px;
+}
+
+.checklist-separator::before,
+.checklist-separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
 }
 
 .check-row {

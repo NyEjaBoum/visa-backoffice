@@ -2,6 +2,7 @@ package com.visa.visa_backoffice.service;
 
 import com.visa.visa_backoffice.dto.CreateDossierRequest;
 import com.visa.visa_backoffice.dto.CreateDossierResponse;
+import com.visa.visa_backoffice.dto.DashboardStatsResponse;
 import com.visa.visa_backoffice.dto.DossierDetailDTO;
 import com.visa.visa_backoffice.dto.DossierListItemDTO;
 import com.visa.visa_backoffice.dto.PieceFournieItem;
@@ -16,13 +17,11 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class DossierService {
-
-    private static final int STATUT_CREE_ID    = 1;
-    private static final int STATUT_VALIDE_ID  = 10;
-    private static final int STATUT_ANNULE_ID  = 20;
 
     private final IndividuService individuService;
     private final PasseportService passeportService;
@@ -66,7 +65,7 @@ public class DossierService {
 
         TypeDemande typeDemande = typeDemandeService.getOrThrow(request.typeDemandeId());
         TypeVisa typeVisa = typeVisaService.getOrThrow(request.typeVisaId());
-        Statut statutCree = statutService.getRequired(STATUT_CREE_ID, "Statut CREE non configure");
+        Statut statutCree = statutService.getRequiredByLibelle("CREE");
 
         SituationFamiliale situationFamiliale = null;
         if (request.situationFamilialeId() != null) {
@@ -154,14 +153,14 @@ public class DossierService {
     public ValiderDossierResponse validerDossier(Integer dossierId) {
         DemandeVisa dossier = demandeVisaService.getOrThrow(dossierId);
 
-        if (dossier.getStatut() != null && dossier.getStatut().getId() == STATUT_VALIDE_ID) {
+        if (dossier.getStatut() != null && "VALIDE".equalsIgnoreCase(dossier.getStatut().getLibelle())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Ce dossier est deja valide");
         }
-        if (dossier.getStatut() != null && dossier.getStatut().getId() == STATUT_ANNULE_ID) {
+        if (dossier.getStatut() != null && "ANNULE".equalsIgnoreCase(dossier.getStatut().getLibelle())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Un dossier annule ne peut pas etre valide");
         }
 
-        Statut statutValide = statutService.getRequired(STATUT_VALIDE_ID, "Statut VALIDE non configure");
+        Statut statutValide = statutService.getRequiredByLibelle("VALIDE");
 
         dossier.setStatut(statutValide);
         demandeVisaService.create(dossier);
@@ -225,10 +224,19 @@ public class DossierService {
         return prefix + String.format("%04d", next);
     }
 
-    public int countDossiersByStatut(int statutId) {
-        return (int) demandeVisaService.findAll().stream()
-                .filter(d -> d.getStatut() != null && d.getStatut().getId() == statutId)
-                .count();
+    @Transactional(readOnly = true)
+    public DashboardStatsResponse getStats() {
+        Map<String, Long> byLibelle = demandeVisaService.findAll().stream()
+                .filter(d -> d.getStatut() != null)
+                .collect(Collectors.groupingBy(
+                        d -> d.getStatut().getLibelle().toUpperCase(),
+                        Collectors.counting()
+                ));
+        long total   = byLibelle.values().stream().mapToLong(Long::longValue).sum();
+        long crees   = byLibelle.getOrDefault("CREE",   0L);
+        long valides = byLibelle.getOrDefault("VALIDE", 0L);
+        long annules = byLibelle.getOrDefault("ANNULE", 0L);
+        return new DashboardStatsResponse((int) total, (int) crees, (int) valides, (int) annules);
     }
 
     @Transactional(readOnly = true)

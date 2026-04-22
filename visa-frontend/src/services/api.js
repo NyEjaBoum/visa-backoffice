@@ -23,6 +23,11 @@ export async function createDossier(payload) {
   return handleResponse(res)
 }
 
+export async function getStatuts() {
+  const res = await fetch(`${BASE}/statuts`, { headers: authHeaders() })
+  return handleResponse(res)
+}
+
 export async function getDashboardStats() {
   const res = await fetch(`${BASE}/dossiers/stats`, { headers: authHeaders() })
   return handleResponse(res)

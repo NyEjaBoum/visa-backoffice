@@ -35,11 +35,7 @@ public class DossierController {
 
     @GetMapping("/stats")
     public ResponseEntity<DashboardStatsResponse> getStats() {
-        int crees    = dossierService.countDossiersByStatut(1);
-        int valides  = dossierService.countDossiersByStatut(10);
-        int annules  = dossierService.countDossiersByStatut(20);
-        int total    = crees + valides + annules;
-        return ResponseEntity.ok(new DashboardStatsResponse(total, crees, valides, annules));
+        return ResponseEntity.ok(dossierService.getStats());
     }
 
     @GetMapping

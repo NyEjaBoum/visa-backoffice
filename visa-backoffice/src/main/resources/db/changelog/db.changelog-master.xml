@@ -13,5 +13,6 @@
     <include file="06_20260421_fix_visa_transformable_entree.sql" relativeToChangelogFile="true"/>
     <include file="07_20260421_backfill_vt_dates.sql" relativeToChangelogFile="true"/>
     <include file="08_20260421_drop_vt_date_debut_fin.sql" relativeToChangelogFile="true"/>
+    <include file="09_20260422_test_donnees.sql" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>
