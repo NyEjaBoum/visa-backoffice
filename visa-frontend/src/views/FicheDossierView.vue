@@ -2,12 +2,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SideNav from '../components/SideNav.vue'
-import { getDossier, validateDossier } from '../services/api.js'
+import { getDossier, validateDossier, getStatuts } from '../services/api.js'
 
 const route = useRoute()
 const router = useRouter()
 
 const dossier = ref(null)
+const statuts = ref([])
 const loading = ref(false)
 const errorMsg = ref('')
 const validating = ref(false)
@@ -54,8 +55,10 @@ function isExpiredDate(localDateStr) {
 }
 
 const canValidate = computed(() => {
-  const s = (dossier.value?.statut || '').toUpperCase()
-  return s === 'CREE' || s === 'CRÉÉ' || s === 'CREEE'
+  if (!dossier.value?.statut || statuts.value.length === 0) return false
+  const sorted = [...statuts.value].sort((a, b) => a.id - b.id)
+  const initialLibelle = sorted[0]?.libelle?.toUpperCase()
+  return (dossier.value.statut || '').toUpperCase() === initialLibelle
 })
 
 async function load() {
@@ -63,7 +66,9 @@ async function load() {
   errorMsg.value = ''
   dossier.value = null
   try {
-    dossier.value = await getDossier(dossierId.value)
+    const [data, statutsData] = await Promise.all([getDossier(dossierId.value), getStatuts()])
+    dossier.value = data
+    statuts.value = Array.isArray(statutsData) ? statutsData : []
   } catch (e) {
     errorMsg.value = e?.message || 'Impossible de charger le dossier'
   } finally {

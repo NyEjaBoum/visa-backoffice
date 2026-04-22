@@ -39,6 +39,12 @@ public class StatutService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage));
     }
 
+    public Statut getRequiredByLibelle(String libelle) {
+        return repo.findByLibelleIgnoreCase(libelle)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR, "Statut '" + libelle + "' non configure en base"));
+    }
+
     public Statut create(Statut statut) {
         return repo.save(statut);
     }

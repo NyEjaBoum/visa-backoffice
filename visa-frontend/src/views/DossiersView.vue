@@ -1,9 +1,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import SideNav from '../components/SideNav.vue'
-import { getDossiers } from '../services/api.js'
+import { getDossiers, getStatuts } from '../services/api.js'
 
 const dossiers = ref([])
+const statuts = ref([])
 const loading = ref(false)
 const errorMsg = ref('')
 
@@ -21,9 +22,13 @@ function formatDateTime(value) {
 }
 
 function statusClass(statut) {
-  const s = (statut || '').toUpperCase()
-  if (s === 'VALIDE' || s === 'VALIDÉ' || s === 'VALIDEE') return 'badge badge--primary'
-  if (s === 'ANNULE' || s === 'ANNULÉ' || s === 'ANNULEE') return 'badge badge--danger'
+  const sorted = [...statuts.value].sort((a, b) => a.id - b.id)
+  const libelle = (statut || '').toUpperCase()
+  if (sorted.length === 0) return 'badge badge--muted'
+  const last = sorted[sorted.length - 1]?.libelle?.toUpperCase()
+  const first = sorted[0]?.libelle?.toUpperCase()
+  if (libelle === last) return 'badge badge--danger'
+  if (libelle !== first && libelle !== '') return 'badge badge--primary'
   return 'badge badge--muted'
 }
 
@@ -31,8 +36,9 @@ async function load() {
   loading.value = true
   errorMsg.value = ''
   try {
-    const data = await getDossiers()
+    const [data, statutsData] = await Promise.all([getDossiers(), getStatuts()])
     dossiers.value = Array.isArray(data) ? data : []
+    statuts.value = Array.isArray(statutsData) ? statutsData : []
   } catch (e) {
     errorMsg.value = e?.message || 'Impossible de charger les dossiers'
     dossiers.value = []
