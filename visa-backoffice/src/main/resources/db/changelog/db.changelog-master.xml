@@ -5,14 +5,8 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
     http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
-    <include file="01_20260415_setup_nomenclatures.sql" relativeToChangelogFile="true"/>
-    <include file="02_20260415_setup_persistance.sql" relativeToChangelogFile="true"/>
-    <include file="03_20260415_data.sql" relativeToChangelogFile="true"/>
-    <include file="04_20260421_us03_pieces_checklist.sql" relativeToChangelogFile="true"/>
-    <include file="05_20260421_us03_info_individu_complet.sql" relativeToChangelogFile="true"/>
-    <include file="06_20260421_fix_visa_transformable_entree.sql" relativeToChangelogFile="true"/>
-    <include file="07_20260421_backfill_vt_dates.sql" relativeToChangelogFile="true"/>
-    <include file="08_20260421_drop_vt_date_debut_fin.sql" relativeToChangelogFile="true"/>
-    <include file="09_20260422_test_donnees.sql" relativeToChangelogFile="true"/>
+    <include file="01_20260423_setup_tables.sql" relativeToChangelogFile="true"/>
+    <include file="03_20260423_visa_transformable.sql" relativeToChangelogFile="true"/>
+    <include file="02_20260423_data.sql" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

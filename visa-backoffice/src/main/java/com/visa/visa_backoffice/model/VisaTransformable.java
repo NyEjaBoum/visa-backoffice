@@ -20,8 +20,8 @@ public class VisaTransformable {
     @JoinColumn(name = "id_passeport")
     private Passeport passeport;
 
-    @Column(name = "numero_reference", unique = true)
-    private String numeroReference;
+    @Column(name = "reference", nullable = false, unique = true)
+    private String reference;
 
     @Column(name = "date_entree")
     private LocalDate dateEntree;
@@ -33,6 +33,7 @@ public class VisaTransformable {
     private LocalDate dateFinVisa;
 
     public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
 
     public Individu getIndividu() { return individu; }
     public void setIndividu(Individu individu) { this.individu = individu; }
@@ -40,14 +41,14 @@ public class VisaTransformable {
     public Passeport getPasseport() { return passeport; }
     public void setPasseport(Passeport passeport) { this.passeport = passeport; }
 
-    public String getNumeroReference() { return numeroReference; }
-    public void setNumeroReference(String numeroReference) { this.numeroReference = numeroReference; }
+    public String getReference() { return reference; }
+    public void setReference(String reference) { this.reference = reference == null ? null : reference.trim(); }
 
     public LocalDate getDateEntree() { return dateEntree; }
     public void setDateEntree(LocalDate dateEntree) { this.dateEntree = dateEntree; }
 
     public String getLieuEntree() { return lieuEntree; }
-    public void setLieuEntree(String lieuEntree) { this.lieuEntree = lieuEntree; }
+    public void setLieuEntree(String lieuEntree) { this.lieuEntree = lieuEntree == null ? null : lieuEntree.trim(); }
 
     public LocalDate getDateFinVisa() { return dateFinVisa; }
     public void setDateFinVisa(LocalDate dateFinVisa) { this.dateFinVisa = dateFinVisa; }

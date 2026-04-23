@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title} + ' — Visa Backoffice'">Référentiel</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body class="app-body">
+<div class="app-layout">
+
+    <div th:replace="~{fragments/sidebar :: sidebar('demandes')}"></div>
+
+    <main class="app-content">
+        <div class="page">
+            <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+                <div>
+                    <h1 class="page-title" th:text="${title}">Référentiel</h1>
+                    <p class="page-subtitle" th:text="${subtitle}">Liste</p>
+                </div>
+                <a th:href="@{${basePath + '/nouveau'}}" class="btn btn-primary-app">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Nouveau
+                </a>
+            </div>
+
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+            <div class="table-wrapper" th:if="${items != null and !items.isEmpty()}">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Libellé</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="i : ${items}">
+                        <td style="font-weight:600;color:#0f172a;" th:text="${i.id}">1</td>
+                        <td th:text="${i.libelle}">LIBELLE</td>
+                        <td>
+                            <a th:href="@{${basePath + '/' + i.id}}" class="link-action">Voir →</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div th:if="${items == null or items.isEmpty()}" class="empty-state">
+                <div class="empty-state-text">Aucune donnée.</div>
+            </div>
+        </div>
+    </main>
+
+</div>
+</body>
+</html>

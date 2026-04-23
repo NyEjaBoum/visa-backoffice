@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface DemandeVisaRepository extends JpaRepository<DemandeVisa, Integer> {
-    Optional<DemandeVisa> findTopByNumDemandeStartingWithOrderByNumDemandeDesc(String prefix);
 
     @Query("""
             SELECT d FROM DemandeVisa d
@@ -29,7 +28,10 @@ public interface DemandeVisaRepository extends JpaRepository<DemandeVisa, Intege
             LEFT JOIN FETCH d.typeVisa tv
             LEFT JOIN FETCH d.typeDemande td
             LEFT JOIN FETCH d.statut s
+            LEFT JOIN FETCH d.visaTransformable vt
             ORDER BY d.dateCreation DESC
             """)
     List<DemandeVisa> findAllWithRefs();
+
+    Optional<DemandeVisa> findTopByNumDemandeStartingWithOrderByNumDemandeDesc(String prefix);
 }

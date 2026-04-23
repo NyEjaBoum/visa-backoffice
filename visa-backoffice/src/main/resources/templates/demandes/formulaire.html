@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${demandeId != null} ? 'Modifier la demande — Visa Backoffice' : 'Nouvelle demande — Visa Backoffice'">Demande</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body class="app-body">
+<div class="app-layout">
+
+    <div th:replace="~{fragments/sidebar :: sidebar(${demandeId != null} ? 'demandes' : 'nouveau')}"></div>
+
+    <main class="app-content">
+        <div class="page">
+            <div class="page-header">
+                <h1 class="page-title"
+                    th:text="${demandeId != null} ? 'Modifier la demande' : 'Nouvelle demande de visa'">Demande</h1>
+                <p class="page-subtitle" th:if="${numDemande != null}">
+                    Dossier : <strong th:text="${numDemande}"></strong>
+                </p>
+                <p class="page-subtitle" th:if="${numDemande == null}">
+                    Remplissez les informations ci-dessous pour enregistrer la demande.
+                </p>
+            </div>
+
+            <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}"></div>
+
+            <form th:action="${demandeId != null} ? @{/demandes/{id}/modifier(id=${demandeId})} : @{/demandes}"
+                  th:object="${form}"
+                  method="post">
+
+                <!-- Nature de la démarche -->
+                <div class="section">
+                    <h2 class="section-title">Nature de la démarche</h2>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label" for="typeDemandeId">
+                                Type de demande <span class="req">*</span>
+                            </label>
+                            <select id="typeDemandeId" th:field="*{typeDemandeId}" class="form-select" required>
+                                <option value="">— Sélectionner —</option>
+                                <option th:each="td : ${typesDemande}"
+                                        th:value="${td.id}"
+                                        th:text="${td.libelle}"></option>
+                            </select>
+                            <small class="form-error" th:if="${#fields.hasErrors('typeDemandeId')}" th:errors="*{typeDemandeId}"></small>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="typeVisaId">
+                                Catégorie visa <span class="req">*</span>
+                            </label>
+                            <select id="typeVisaId" th:field="*{typeVisaId}" class="form-select" required>
+                                <option value="">— Sélectionner —</option>
+                                <option th:each="tv : ${typesVisa}"
+                                        th:value="${tv.id}"
+                                        th:text="${tv.libelle}"></option>
+                            </select>
+                            <small class="form-error" th:if="${#fields.hasErrors('typeVisaId')}" th:errors="*{typeVisaId}"></small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- État civil -->
+                <div class="section">
+                    <h2 class="section-title">1. État civil</h2>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label" for="nom">Nom <span class="req">*</span></label>
+                            <input type="text" id="nom" th:field="*{nom}"
+                                   class="form-input" placeholder="Nom de famille" required>
+                            <small class="form-error" th:if="${#fields.hasErrors('nom')}" th:errors="*{nom}"></small>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="prenoms">Prénoms</label>
+                            <input type="text" id="prenoms" th:field="*{prenoms}"
+                                   class="form-input" placeholder="Prénoms">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="nomJeuneFille">Nom de jeune fille</label>
+                            <input type="text" id="nomJeuneFille" th:field="*{nomJeuneFille}"
+                                   class="form-input" placeholder="Nom de naissance">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="dateNaissance">
+                                Date de naissance <span class="req">*</span>
+                            </label>
+                            <input type="date" id="dateNaissance" th:field="*{dateNaissance}"
+                                   class="form-input" required>
+                            <small class="form-error" th:if="${#fields.hasErrors('dateNaissance')}" th:errors="*{dateNaissance}"></small>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="situationFamilialeId">Situation familiale</label>
+                            <select id="situationFamilialeId" th:field="*{situationFamilialeId}" class="form-select">
+                                <option value="">— Sélectionner —</option>
+                                <option th:each="sf : ${situationsFamiliales}"
+                                        th:value="${sf.id}"
+                                        th:text="${sf.libelle}"></option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="nationaliteId">Nationalité</label>
+                            <select id="nationaliteId" th:field="*{nationaliteId}" class="form-select">
+                                <option value="">— Sélectionner —</option>
+                                <option th:each="nat : ${nationalites}"
+                                        th:value="${nat.id}"
+                                        th:text="${nat.libelle}"></option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="profession">Profession</label>
+                            <input type="text" id="profession" th:field="*{profession}"
+                                   class="form-input" placeholder="Profession exercée">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="adresseMada">
+                                Adresse à Madagascar <span class="req">*</span>
+                            </label>
+                            <input type="text" id="adresseMada" th:field="*{adresseMada}"
+                                   class="form-input" placeholder="Adresse complète" required>
+                            <small class="form-error" th:if="${#fields.hasErrors('adresseMada')}" th:errors="*{adresseMada}"></small>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="contactMada">Contact à Madagascar</label>
+                            <input type="text" id="contactMada" th:field="*{contactMada}"
+                                   class="form-input" placeholder="Téléphone ou email">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Passeport -->
+                <div class="section">
+                    <h2 class="section-title">2. Passeport</h2>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label" for="numeroPasseport">
+                                Numéro de passeport <span class="req">*</span>
+                            </label>
+                            <input type="text" id="numeroPasseport" th:field="*{numeroPasseport}"
+                                   class="form-input" placeholder="Ex : AB123456" required>
+                            <small class="form-error" th:if="${#fields.hasErrors('numeroPasseport')}" th:errors="*{numeroPasseport}"></small>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="dateDelivrance">Date de délivrance</label>
+                            <input type="date" id="dateDelivrance" th:field="*{dateDelivrance}" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="dateExpiration">Date d'expiration</label>
+                            <input type="date" id="dateExpiration" th:field="*{dateExpiration}" class="form-input">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visa transformable -->
+                <div class="section">
+                    <h2 class="section-title">3. Visa transformable</h2>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label" for="visaTransformableReference">Référence visa actuel</label>
+                            <input type="text" id="visaTransformableReference" th:field="*{visaTransformableReference}"
+                                   class="form-input" placeholder="Ex : VT-2026-0001">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="visaTransformableDateEntree">Date d'entrée</label>
+                            <input type="date" id="visaTransformableDateEntree" th:field="*{visaTransformableDateEntree}"
+                                   class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="visaTransformableLieuEntree">Lieu d'entrée</label>
+                            <input type="text" id="visaTransformableLieuEntree" th:field="*{visaTransformableLieuEntree}"
+                                   class="form-input" placeholder="Aéroport / Port / Frontière">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="visaTransformableDateFinVisa">Date fin visa actuel</label>
+                            <input type="date" id="visaTransformableDateFinVisa" th:field="*{visaTransformableDateFinVisa}"
+                                   class="form-input">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary-app"
+                            th:text="${demandeId != null} ? 'Enregistrer les modifications' : 'Créer le dossier'">
+                        Créer le dossier
+                    </button>
+                    <a th:href="${demandeId != null} ? @{/demandes/{id}(id=${demandeId})} : @{/demandes}"
+                       class="btn btn-ghost">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </main>
+
+</div>
+</body>
+</html>

@@ -1,22 +1,20 @@
 package com.visa.visa_backoffice.model;
 
 import jakarta.persistence.*;
-import java.util.List;
 
 @Entity
 @Table(name = "role")
 public class Role {
 
     @Id
-    private Integer id;
+    @Column(name = "code")
+    private String code;
 
-    @Column(name = "nom_role")
-    private String nomRole;
+    private String libelle;
 
-    @OneToMany(mappedBy = "role", fetch = FetchType.EAGER)
-    private List<RoleAction> actions;
+    public String getCode() { return code; }
+    public void setCode(String code) { this.code = code; }
 
-    public Integer getId() { return id; }
-    public String getNomRole() { return nomRole; }
-    public List<RoleAction> getActions() { return actions; }
+    public String getLibelle() { return libelle; }
+    public void setLibelle(String libelle) { this.libelle = libelle; }
 }

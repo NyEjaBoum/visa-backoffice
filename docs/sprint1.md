@@ -1,49 +1,64 @@
-# 🚀 SPRINT 1 : Fondations & Nouveau Titre (15/04/2026)
+# Spécifications Fonctionnelles - Application Visa
 
-## Objectif
+## US00 : Authentification & Autorisations (Login)
+**Développeur** : 3657
 
-Mettre en place l'authentification sécurisée et le formulaire de création de dossier pour une première demande de transformation de visa.
-
----
-
-### [ ] US01 : Authentification & Autorisations (Login)
-
-#### Développeur : 3657
-
-* **Écran** : Page de connexion login.
-* **Scénario** : L'agent saisit son identifiant et son mot de passe. En cas de succès, un Token JWT est généré contenant l'identifiant de l'agent, son rôle et la liste de ses permissions (actions autorisées, ex : SELECT, INSERT, UPDATE, DELETE, CREATE). Ce token est utilisé pour sécuriser toutes les requêtes ultérieures.
-* **Métier** : Lors de la connexion, le back-end extrait le rôle de l'utilisateur et toutes ses actions autorisées depuis la table `role_action`. Ces permissions sont placées dans le token JWT. Les tables de nomenclatures (`statut`, `type_visa`, `type_demande_visa`) sont chargées une seule fois en session côté client après la connexion (elles ne sont pas dans le token).
- À chaque action, le système vérifie en session si l'utilisateur a le droit d'effectuer l'opération demandée, selon ses permissions extraites au login.
-* **Base** : `utilisateur`, `role`, `role_action`.
+* **Écran** : Page de connexion (Login).
+* **Scénario** : L'agent saisit son identifiant et son mot de passe. En cas de succès, un **Token JWT** est généré contenant :
+    * L'identifiant de l'agent.
+    * Son rôle.
+    * La liste de ses permissions (ex: `SELECT`, `INSERT`, `UPDATE`, `DELETE`).
+* **Logique Métier** : 
+    * Le back-end extrait les permissions depuis la table `role_action`.
+    * Les tables de nomenclature (`statut`, `type_visa`, `type_demande_visa`) sont chargées en cache/session côté client après connexion.
+    * À chaque action, le système vérifie si le token autorise l'opération.
+* **Base de données** : `utilisateur`, `role`, `role_action`.
 
 ---
 
-### [ ] US02 : Création de Dossier (Configuration & Nouveau Titre)
+## Sprint 1 : Saisie de Demande et Recevabilité
 
-#### Développeuse : 3389
+**User Story** : *"En tant qu'opérateur, je veux saisir les informations d'un individu et de son passeport pour insérer une demande de visa."*
 
-* **Écran** : Formulaire organisé en 3 blocs : État Civil, Voyage (Passeport/Visa) et Catégorie. Un sélecteur en haut définit la nature de la démarche (Type de Demande).
-* **Scénario** : L'agent saisit les informations d'une première demande de transformation. La référence du visa transformable est un champ obligatoire.
-* **Métier** : Validation des dates (le passeport ne doit pas être expiré). Génération automatique du numéro de dossier unique. Initialisation automatique du statut à **1 (CRÉÉ)**.
-* **Base** : `type_demande_visa`, `individu`, `passeport`, `demande_visa`.
+### Scénarios Métiers :
+1.  **Saisie Initiale** : 
+    * L'opérateur remplit les champs obligatoires (Individu, Passeport).
+    * Il saisit les informations du **Visa Transformable** (justificatif d'entrée).
+    * Il sélectionne le type de visa (Travailleur/Investisseur) et valide les pièces présentes.
+2.  **Flexibilité (Statut CRÉÉ)** : 
+    * Tant que la demande est au statut `CRÉÉ`, l'opérateur peut modifier toutes les infos (erreur de saisie, contact, etc.).
+3.  **Génération du Suivi** : 
+    * Le système génère un **QR Code unique** (token de suivi) dès l'insertion pour l'usager.
+
+### Données à l'écran :
+* **Individu** : Nom (Obligatoire), Prénoms, Date de naissance (Obligatoire), Adresse Madagascar (Obligatoire), Contact.
+* **Référentiels** : Nationalité, Situation Familiale.
+* **Passeport** : Numéro, Date de délivrance, Date d'expiration.
+* **Visa Transformable** : Référence, Date d'entrée, Lieu d'entrée.
+* **Demande** : Type de visa (Travailleur/Investisseur) et Type de demande (Nouveau titre).
+
+**Tables concernées** : `individu`, `passeport`, `visa_transformable`, `demande_visa`, `nationalite`, `situation_familiale`, `type_visa`, `type_demande_visa`.
 
 ---
 
-### [ ] US03 : Gestion des Catégories & Checklist
+## Sprint 2 : Gestion des Antécédents (Duplicata & Transfert)
 
-#### Développeurs : 3389 (Back) & 3657 (Front)
+**User Story** : *"En tant qu'opérateur, je veux traiter les demandes de duplicata ou de transfert, même si l'usager n'est pas dans notre base."*
 
-* **Écran** : Menu déroulant pour choisir le Type de Visa (Investisseur / Travailleur). Une liste de cases à cocher (checklist) apparaît dynamiquement selon ce choix.
-* **Scénario** : L'agent vérifie physiquement les documents apportés par l'étranger et coche les cases correspondantes dans l'interface.
-* **Métier** : Récupération des types de visa. Vérification de la présence de toutes les pièces obligatoires avant de permettre l'enregistrement final en base.
-* **Base** : `type_visa`, `piece_fournie`.
+### Scénarios Métiers :
+1.  **Cas Normal (Déjà en base)** : 
+    * Recherche par numéro de passeport ou demande.
+    * Le système récupère les infos. L'opérateur crée une demande de **Duplicata** ou **Transfert**.
+    * *Note : Le champ `id_visa_transformable` dans la table `demande_visa` reste **NULL** pour ces cas.*
+2.  **Cas "Sans Données Antérieures" (Régularisation)** :
+    * L'usager a un titre physique mais n'existe pas dans le logiciel.
+    * **Action** : On crée une demande de "Nouveau Titre" (Injection) avec les infos du `visa_transformable` papier pour créer son dossier numérique.
+    * Une fois validé (VISA APPROUVÉ), on peut traiter son Duplicata/Transfert.
+3.  **Édition** : 
+    * Génération du PDF "Attestation récépissé dossier" (État civil, infos passeport, visa actuel et liste des documents reçus).
 
----
+### Données à l'écran :
+* **Recherche** : Numéro de passeport ou ID demande.
+* **Historique papier** : Table `visa_transformable` (pour le cas de régularisation).
 
-### 📝 NOTE SUR LE CAS "SANS DONNÉES ANTÉRIEURES"
-
-Lors d'un duplicata futur, si l'individu n'existe pas encore en base de données (ancien dossier papier), le système permet de créer manuellement l'entrée dans les tables `individu` et `passeport` directement pendant la saisie de la demande. Cela permet de régulariser et numériser les archives sans bloquer le processus administratif.
-
-### 🎨 Consigne UI (Pour 3657)
-
-S'inspirer de `templates/html/demande.html` pour la structure des blocs, les champs  et la checklist dynamique (style SaaS, clean, rounded-corners).
+**Tables concernées** : `visa_transformable`, `visa`, `carte_resident`, `demande_visa`, `statut`.

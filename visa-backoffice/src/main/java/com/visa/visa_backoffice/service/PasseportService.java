@@ -1,52 +1,55 @@
 package com.visa.visa_backoffice.service;
 
+import com.visa.visa_backoffice.model.Individu;
 import com.visa.visa_backoffice.model.Passeport;
 import com.visa.visa_backoffice.repository.PasseportRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
+@Transactional
 public class PasseportService {
 
-    private final PasseportRepository repo;
+    private final PasseportRepository passeportRepository;
+    private final IndividuService individuService;
 
-    public PasseportService(PasseportRepository repo) {
-        this.repo = repo;
+    public PasseportService(PasseportRepository passeportRepository, IndividuService individuService) {
+        this.passeportRepository = passeportRepository;
+        this.individuService = individuService;
     }
 
+    @Transactional(readOnly = true)
     public List<Passeport> findAll() {
-        return repo.findAll();
+        return passeportRepository.findAll();
     }
 
-    public Optional<Passeport> findById(Integer id) {
-        return repo.findById(id);
+    @Transactional(readOnly = true)
+    public Passeport findByIdOrThrow(Integer id) {
+        return passeportRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Passeport introuvable : " + id));
     }
 
-    public Passeport getOrThrow(Integer id) {
-        return repo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Passeport introuvable"));
+    public Passeport create(Integer individuId, Passeport passeport) {
+        Individu individu = individuService.findByIdOrThrow(individuId);
+        passeport.setIndividu(individu);
+        if (passeport.getActive() == null) {
+            passeport.setActive(true);
+        }
+        return passeportRepository.save(passeport);
     }
 
-    public Passeport create(Passeport passeport) {
-        return repo.save(passeport);
-    }
-
-    public Passeport update(Integer id, Passeport passeport) {
-        Passeport existing = getOrThrow(id);
-        existing.setIndividu(passeport.getIndividu());
-        existing.setNumeroPass(passeport.getNumeroPass());
-        existing.setDateDelivrance(passeport.getDateDelivrance());
-        existing.setDateExpiration(passeport.getDateExpiration());
-        existing.setActive(passeport.getActive());
-        return repo.save(existing);
-    }
-
-    public void delete(Integer id) {
-        getOrThrow(id);
-        repo.deleteById(id);
+    public Passeport update(Integer id, Passeport payload) {
+        Passeport existing = findByIdOrThrow(id);
+        existing.setNumeroPass(payload.getNumeroPass());
+        existing.setDateDelivrance(payload.getDateDelivrance());
+        existing.setDateExpiration(payload.getDateExpiration());
+        if (payload.getActive() != null) {
+            existing.setActive(payload.getActive());
+        }
+        return passeportRepository.save(existing);
     }
 }

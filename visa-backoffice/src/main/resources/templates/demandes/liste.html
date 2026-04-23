@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demandes — Visa Backoffice</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body class="app-body">
+<div class="app-layout">
+
+    <div th:replace="~{fragments/sidebar :: sidebar('demandes')}"></div>
+
+    <main class="app-content">
+        <div class="page">
+            <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+                <div>
+                    <h1 class="page-title">Demandes de visa</h1>
+                    <p class="page-subtitle">Liste de toutes les demandes enregistrées</p>
+                </div>
+                <a th:href="@{/demandes/nouveau}" class="btn btn-primary-app">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Nouvelle demande
+                </a>
+            </div>
+
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+            <div class="table-wrapper" th:if="${!demandes.isEmpty()}">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>N° Dossier</th>
+                            <th>Nom</th>
+                            <th>Prénoms</th>
+                            <th>Type de visa</th>
+                            <th>Type de demande</th>
+                            <th>Statut</th>
+                            <th>Date création</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="d : ${demandes}">
+                            <td style="font-weight:600;color:#0f172a;" th:text="${d.numDemande}">MADA-2026-0001</td>
+                            <td th:text="${d.individu?.nom}">NOM</td>
+                            <td th:text="${d.individu?.prenoms}">—</td>
+                            <td th:text="${d.typeVisa?.libelle}">TRAVAILLEUR</td>
+                            <td th:text="${d.typeDemande?.libelle}">NOUVEAU TITRE</td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${d.statut?.libelle == 'CREE'} ? ' badge-cree' : (${d.statut?.libelle == 'VALIDE'} ? ' badge-valide' : ' badge-annule')"
+                                      th:text="${d.statut?.libelle}">CREE</span>
+                            </td>
+                            <td style="color:#64748b;font-size:13px;"
+                                th:text="${#temporals.format(d.dateCreation, 'dd/MM/yyyy HH:mm')}">—</td>
+                            <td>
+                                <a th:href="@{/demandes/{id}(id=${d.id})}" class="link-action">Voir →</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div th:if="${demandes.isEmpty()}" class="empty-state">
+                <div class="empty-state-icon">📋</div>
+                <div class="empty-state-text">Aucune demande enregistrée.<br>
+                    <a th:href="@{/demandes/nouveau}" class="link-action" style="margin-top:8px;display:inline-block;">Créer la première demande →</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+</div>
+</body>
+</html>

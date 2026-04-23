@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title} + ' — Visa Backoffice'">Détail</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body class="app-body">
+<div class="app-layout">
+
+    <div th:replace="~{fragments/sidebar :: sidebar('demandes')}"></div>
+
+    <main class="app-content">
+        <div class="page">
+            <div class="detail-header">
+                <div>
+                    <div class="detail-num" th:text="'ID ' + ${item.id}">ID</div>
+                    <div class="detail-date" th:text="${item.libelle}">LIBELLE</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Détail</h2>
+                <div class="grid-2">
+                    <div class="field-block">
+                        <span class="field-label">Id</span>
+                        <span class="field-value" th:text="${item.id}">—</span>
+                    </div>
+                    <div class="field-block">
+                        <span class="field-label">Libellé</span>
+                        <span class="field-value" th:text="${item.libelle}">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <a th:href="@{${basePath + '/' + item.id + '/modifier'}}" class="btn btn-primary-app">Modifier</a>
+                <a th:href="@{${basePath}}" class="btn btn-ghost">← Retour</a>
+            </div>
+        </div>
+    </main>
+
+</div>
+</body>
+</html>

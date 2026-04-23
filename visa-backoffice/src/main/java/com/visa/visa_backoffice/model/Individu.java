@@ -1,8 +1,11 @@
 package com.visa.visa_backoffice.model;
 
 import jakarta.persistence.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "individu")
@@ -25,7 +28,10 @@ public class Individu {
     @JoinColumn(name = "id_situation_familiale")
     private SituationFamiliale situationFamiliale;
 
-    private String nationalite;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_nationalite")
+    private Nationalite nationalite;
+
     private String profession;
 
     @Column(name = "adresse_mada")
@@ -34,32 +40,65 @@ public class Individu {
     @Column(name = "contact_mada")
     private String contactMada;
 
+    @Column(name = "created_date")
+    private LocalDateTime createdDate;
+
+    @Column(name = "updated_date")
+    private LocalDateTime updatedDate;
+
     public Integer getId() { return id; }
 
     public String getNom() { return nom; }
-    public void setNom(String nom) { this.nom = nom; }
+    public void setNom(String nom) {
+        this.nom = trim(nom);
+        if (blank(this.nom)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le nom est obligatoire");
+        }
+    }
 
     public String getPrenoms() { return prenoms; }
-    public void setPrenoms(String prenoms) { this.prenoms = prenoms; }
+    public void setPrenoms(String prenoms) { this.prenoms = trim(prenoms); }
 
     public String getNomJeuneFille() { return nomJeuneFille; }
-    public void setNomJeuneFille(String nomJeuneFille) { this.nomJeuneFille = nomJeuneFille; }
+    public void setNomJeuneFille(String nomJeuneFille) { this.nomJeuneFille = trim(nomJeuneFille); }
 
     public LocalDate getDateNaissance() { return dateNaissance; }
-    public void setDateNaissance(LocalDate dateNaissance) { this.dateNaissance = dateNaissance; }
+    public void setDateNaissance(LocalDate dateNaissance) {
+        if (dateNaissance == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La date de naissance est obligatoire");
+        }
+        this.dateNaissance = dateNaissance;
+    }
 
     public SituationFamiliale getSituationFamiliale() { return situationFamiliale; }
     public void setSituationFamiliale(SituationFamiliale situationFamiliale) { this.situationFamiliale = situationFamiliale; }
 
-    public String getNationalite() { return nationalite; }
-    public void setNationalite(String nationalite) { this.nationalite = nationalite; }
+    public Nationalite getNationalite() { return nationalite; }
+    public void setNationalite(Nationalite nationalite) { this.nationalite = nationalite; }
 
     public String getProfession() { return profession; }
-    public void setProfession(String profession) { this.profession = profession; }
+    public void setProfession(String profession) { this.profession = trim(profession); }
 
     public String getAdresseMada() { return adresseMada; }
-    public void setAdresseMada(String adresseMada) { this.adresseMada = adresseMada; }
+    public void setAdresseMada(String adresseMada) {
+        this.adresseMada = trim(adresseMada);
+        if (blank(this.adresseMada)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "L'adresse à Madagascar est obligatoire");
+        }
+    }
 
     public String getContactMada() { return contactMada; }
-    public void setContactMada(String contactMada) { this.contactMada = contactMada; }
+    public void setContactMada(String contactMada) { this.contactMada = trim(contactMada); }
+
+    public LocalDateTime getCreatedDate() { return createdDate; }
+    public void setCreatedDate(LocalDateTime createdDate) { this.createdDate = createdDate; }
+
+    public LocalDateTime getUpdatedDate() { return updatedDate; }
+    public void setUpdatedDate(LocalDateTime updatedDate) { this.updatedDate = updatedDate; }
+
+    public void setId(Integer id) { this.id = id; }
+
+    private boolean blank(String s) { return s == null || s.isBlank(); }
+    private String trim(String s) { return s == null ? null : s.trim(); }
+
 }

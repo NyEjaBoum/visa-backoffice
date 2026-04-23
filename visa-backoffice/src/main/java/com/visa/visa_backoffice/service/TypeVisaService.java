@@ -4,34 +4,39 @@ import com.visa.visa_backoffice.model.TypeVisa;
 import com.visa.visa_backoffice.repository.TypeVisaRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
+@Transactional(readOnly = true)
 public class TypeVisaService {
-    private final TypeVisaRepository repo;
-    public TypeVisaService(TypeVisaRepository repo) { this.repo = repo; }
 
-    public List<TypeVisa> findAll() { return repo.findAll(); }
-    public Optional<TypeVisa> findById(Integer id) { return repo.findById(id); }
+    private final TypeVisaRepository typeVisaRepository;
 
-    public TypeVisa getOrThrow(Integer id) {
-        return repo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de visa introuvable"));
+    public TypeVisaService(TypeVisaRepository typeVisaRepository) {
+        this.typeVisaRepository = typeVisaRepository;
     }
 
-    public TypeVisa create(TypeVisa e) { return repo.save(e); }
-
-    public TypeVisa update(Integer id, TypeVisa e) {
-        // Nomenclature: pas de setters -> on ne supporte pas l'update ici
-        getOrThrow(id);
-        throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "Type de visa non modifiable");
+    public List<TypeVisa> findAll() {
+        return typeVisaRepository.findAll();
     }
 
-    public void delete(Integer id) {
-        getOrThrow(id);
-        repo.deleteById(id);
+    public TypeVisa findById(Integer id) {
+        return typeVisaRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de visa introuvable : " + id));
+    }
+
+    @Transactional
+    public TypeVisa create(TypeVisa typeVisa) {
+        return typeVisaRepository.save(typeVisa);
+    }
+
+    @Transactional
+    public TypeVisa update(Integer id, TypeVisa payload) {
+        TypeVisa existing = findById(id);
+        existing.setLibelle(payload.getLibelle());
+        return typeVisaRepository.save(existing);
     }
 }

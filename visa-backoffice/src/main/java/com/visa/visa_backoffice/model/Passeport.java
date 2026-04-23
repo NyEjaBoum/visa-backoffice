@@ -1,6 +1,8 @@
 package com.visa.visa_backoffice.model;
 
 import jakarta.persistence.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 
@@ -16,7 +18,7 @@ public class Passeport {
     @JoinColumn(name = "id_individu")
     private Individu individu;
 
-    @Column(name = "numero_pass")
+    @Column(name = "numero")
     private String numeroPass;
 
     @Column(name = "date_delivrance")
@@ -32,6 +34,10 @@ public class Passeport {
         return id;
     }
 
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
     public Individu getIndividu() {
         return individu;
     }
@@ -40,12 +46,13 @@ public class Passeport {
         this.individu = individu;
     }
 
-    public String getNumeroPass() {
-        return numeroPass;
-    }
+    public String getNumeroPass() { return numeroPass; }
 
     public void setNumeroPass(String numeroPass) {
-        this.numeroPass = numeroPass;
+        this.numeroPass = trim(numeroPass);
+        if (this.numeroPass == null || this.numeroPass.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le numéro de passeport est obligatoire");
+        }
     }
 
     public LocalDate getDateDelivrance() {
@@ -71,4 +78,6 @@ public class Passeport {
     public void setActive(Boolean active) {
         this.active = active;
     }
+
+    private String trim(String s) { return s == null ? null : s.trim(); }
 }
