@@ -110,6 +110,30 @@
                 </div>
             </div>
 
+            <div class="section" th:if="${demande.visaTransformable != null}">
+                <h2 class="section-title">3. Visa Transformable</h2>
+                <div class="grid-2">
+                    <div class="field-block">
+                        <span class="field-label">Référence</span>
+                        <span class="field-value" th:text="${demande.visaTransformable.reference ?: '—'}">—</span>
+                    </div>
+                    <div class="field-block">
+                        <span class="field-label">Date d'entrée</span>
+                        <span class="field-value"
+                              th:text="${demande.visaTransformable.dateEntree != null ? #temporals.format(demande.visaTransformable.dateEntree,'dd/MM/yyyy') : '—'}">—</span>
+                    </div>
+                    <div class="field-block">
+                        <span class="field-label">Lieu d'entrée</span>
+                        <span class="field-value" th:text="${demande.visaTransformable.lieuEntree ?: '—'}">—</span>
+                    </div>
+                    <div class="field-block">
+                        <span class="field-label">Date de fin de visa</span>
+                        <span class="field-value"
+                              th:text="${demande.visaTransformable.dateFinVisa != null ? #temporals.format(demande.visaTransformable.dateFinVisa,'dd/MM/yyyy') : '—'}">—</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Actions -->
             <div class="form-actions">
                 <a th:if="${modifiable}"
