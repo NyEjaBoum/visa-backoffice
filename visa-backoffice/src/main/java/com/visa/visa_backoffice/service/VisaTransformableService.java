@@ -5,6 +5,8 @@ import com.visa.visa_backoffice.repository.VisaTransformableRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Service
 @Transactional
 public class VisaTransformableService {
@@ -17,5 +19,17 @@ public class VisaTransformableService {
 
     public VisaTransformable save(VisaTransformable vt) {
         return visaTransformableRepository.save(vt);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<VisaTransformable> findByNumero(String numero) {
+        if (numero == null || numero.isBlank()) return Optional.empty();
+        return visaTransformableRepository.findByNumero(numero.trim());
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<VisaTransformable> findLastForDemandeur(Integer demandeurId) {
+        if (demandeurId == null) return Optional.empty();
+        return visaTransformableRepository.findFirstByDemandeurIdOrderByIdDesc(demandeurId);
     }
 }

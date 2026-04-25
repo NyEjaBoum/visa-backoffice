@@ -8,8 +8,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "individu")
-public class Individu {
+@Table(name = "demandeur")
+public class Demandeur {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -47,6 +47,7 @@ public class Individu {
     private LocalDateTime updatedDate;
 
     public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
 
     public String getNom() { return nom; }
     public void setNom(String nom) {
@@ -96,9 +97,6 @@ public class Individu {
     public LocalDateTime getUpdatedDate() { return updatedDate; }
     public void setUpdatedDate(LocalDateTime updatedDate) { this.updatedDate = updatedDate; }
 
-    public void setId(Integer id) { this.id = id; }
-
     private boolean blank(String s) { return s == null || s.isBlank(); }
     private String trim(String s) { return s == null ? null : s.trim(); }
-
 }

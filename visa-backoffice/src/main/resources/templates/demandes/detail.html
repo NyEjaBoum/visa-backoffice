@@ -46,66 +46,66 @@
             </div>
 
             <!-- État civil -->
-            <div class="section" th:if="${demande.individu != null}">
+            <div class="section" th:if="${demande.demandeur != null}">
                 <h2 class="section-title">1. État civil</h2>
                 <div class="grid-2">
                     <div class="field-block">
                         <span class="field-label">Nom</span>
-                        <span class="field-value" th:text="${demande.individu.nom ?: '—'}">NOM</span>
+                        <span class="field-value" th:text="${demande.demandeur.nom ?: '—'}">NOM</span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Prénoms</span>
-                        <span class="field-value" th:text="${demande.individu.prenoms ?: '—'}">—</span>
+                        <span class="field-value" th:text="${demande.demandeur.prenoms ?: '—'}">—</span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Nom de jeune fille</span>
-                        <span class="field-value" th:text="${demande.individu.nomJeuneFille ?: '—'}">—</span>
+                        <span class="field-value" th:text="${demande.demandeur.nomJeuneFille ?: '—'}">—</span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Date de naissance</span>
                         <span class="field-value"
-                              th:text="${demande.individu.dateNaissance != null ? #temporals.format(demande.individu.dateNaissance,'dd/MM/yyyy') : '—'}">—</span>
+                              th:text="${demande.demandeur.dateNaissance != null ? #temporals.format(demande.demandeur.dateNaissance,'dd/MM/yyyy') : '—'}">—</span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Situation familiale</span>
-                        <span class="field-value" th:text="${demande.individu.situationFamiliale?.libelle ?: '—'}">—</span>
+                        <span class="field-value" th:text="${demande.demandeur.situationFamiliale?.libelle ?: '—'}">—</span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Nationalité</span>
-                        <span class="field-value" th:text="${demande.individu.nationalite?.libelle ?: '—'}">—</span>
+                        <span class="field-value" th:text="${demande.demandeur.nationalite?.libelle ?: '—'}">—</span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Profession</span>
-                        <span class="field-value" th:text="${demande.individu.profession ?: '—'}">—</span>
+                        <span class="field-value" th:text="${demande.demandeur.profession ?: '—'}">—</span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Adresse à Madagascar</span>
-                        <span class="field-value" th:text="${demande.individu.adresseMada ?: '—'}">—</span>
+                        <span class="field-value" th:text="${demande.demandeur.adresseMada ?: '—'}">—</span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Contact</span>
-                        <span class="field-value" th:text="${demande.individu.contactMada ?: '—'}">—</span>
+                        <span class="field-value" th:text="${demande.demandeur.contactMada ?: '—'}">—</span>
                     </div>
                 </div>
             </div>
 
             <!-- Passeport -->
-            <div class="section" th:if="${demande.passeport != null}">
+            <div class="section" th:if="${passeport != null}">
                 <h2 class="section-title">2. Passeport</h2>
                 <div class="grid-2">
                     <div class="field-block">
                         <span class="field-label">Numéro</span>
-                        <span class="field-value" th:text="${demande.passeport.numeroPass ?: '—'}">—</span>
+                        <span class="field-value" th:text="${passeport.numero ?: '—'}">—</span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Date de délivrance</span>
                         <span class="field-value"
-                              th:text="${demande.passeport.dateDelivrance != null ? #temporals.format(demande.passeport.dateDelivrance,'dd/MM/yyyy') : '—'}">—</span>
+                              th:text="${passeport.dateDelivrance != null ? #temporals.format(passeport.dateDelivrance,'dd/MM/yyyy') : '—'}">—</span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Date d'expiration</span>
                         <span class="field-value"
-                              th:text="${demande.passeport.dateExpiration != null ? #temporals.format(demande.passeport.dateExpiration,'dd/MM/yyyy') : '—'}">—</span>
+                              th:text="${passeport.dateExpiration != null ? #temporals.format(passeport.dateExpiration,'dd/MM/yyyy') : '—'}">—</span>
                     </div>
                 </div>
             </div>
@@ -115,7 +115,7 @@
                 <div class="grid-2">
                     <div class="field-block">
                         <span class="field-label">Référence</span>
-                        <span class="field-value" th:text="${demande.visaTransformable.reference ?: '—'}">—</span>
+                        <span class="field-value" th:text="${demande.visaTransformable.numero ?: '—'}">—</span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Date d'entrée</span>

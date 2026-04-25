@@ -6,14 +6,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 
-public class DemandeForm {
+public class DemandeAntecedentForm {
 
-    // Individu
-
+    // Cas normal : individu déjà en base (sélectionné via autocomplete)
     private Integer demandeurId;
 
+    // Cas rattrapage : saisie complète de l'individu
     private String nom;
-    
     private String prenoms;
     private String nomJeuneFille;
 
@@ -23,12 +22,10 @@ public class DemandeForm {
     private Integer situationFamilialeId;
     private Integer nationaliteId;
     private String profession;
-    
     private String adresseMada;
-    
     private String contactMada;
 
-    // Passeport
+    // Cas rattrapage : passeport
     private String numeroPasseport;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
@@ -37,12 +34,7 @@ public class DemandeForm {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate dateExpiration;
 
-    // Demande
-    private Integer typeVisaId;
-    
-    private Integer typeDemandeId;
-
-    // Visa transformable (optionnel)
+    // Visa transformable — preuve d'origine (obligatoire dans les deux cas)
     private String visaTransformableNumero;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
@@ -53,14 +45,28 @@ public class DemandeForm {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate visaTransformableDateFinVisa;
 
-    public void validateOrThrow() {
+    // Type de demande B : DUPLICATA (2) ou TRANSFERT (3)
+    private Integer typeDemandeId;
+
+    // Type de visa
+    private Integer typeVisaId;
+
+    public void validateCasNormal() {
+        requireNotNull(demandeurId, "Demandeur obligatoire — utilisez la recherche pour sélectionner un dossier existant");
+        requireNotNull(typeDemandeId, "Le type de demande est obligatoire");
+        requireNotNull(typeVisaId, "Le type de visa est obligatoire");
+        requireNotBlank(visaTransformableNumero, "Le numéro du visa transformable est obligatoire");
+    }
+
+    public void validateRattrapage() {
         requireNotBlank(nom, "Le nom est obligatoire");
         requireNotNull(dateNaissance, "La date de naissance est obligatoire");
         requireNotNull(nationaliteId, "La nationalité est obligatoire");
         requireNotBlank(adresseMada, "L'adresse à Madagascar est obligatoire");
         requireNotBlank(numeroPasseport, "Le numéro de passeport est obligatoire");
-        requireNotNull(typeVisaId, "Le type de visa est obligatoire");
         requireNotNull(typeDemandeId, "Le type de demande est obligatoire");
+        requireNotNull(typeVisaId, "Le type de visa est obligatoire");
+        requireNotBlank(visaTransformableNumero, "Le numéro du visa transformable est obligatoire");
     }
 
     private void requireNotBlank(String value, String message) {
@@ -74,6 +80,9 @@ public class DemandeForm {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
         }
     }
+
+    public Integer getDemandeurId() { return demandeurId; }
+    public void setDemandeurId(Integer demandeurId) { this.demandeurId = demandeurId; }
 
     public String getNom() { return nom; }
     public void setNom(String nom) { this.nom = nom; }
@@ -111,21 +120,21 @@ public class DemandeForm {
     public LocalDate getDateExpiration() { return dateExpiration; }
     public void setDateExpiration(LocalDate dateExpiration) { this.dateExpiration = dateExpiration; }
 
-    public Integer getTypeVisaId() { return typeVisaId; }
-    public void setTypeVisaId(Integer typeVisaId) { this.typeVisaId = typeVisaId; }
+    public String getVisaTransformableNumero() { return visaTransformableNumero; }
+    public void setVisaTransformableNumero(String ref) { this.visaTransformableNumero = ref; }
+
+    public LocalDate getVisaTransformableDateEntree() { return visaTransformableDateEntree; }
+    public void setVisaTransformableDateEntree(LocalDate d) { this.visaTransformableDateEntree = d; }
+
+    public String getVisaTransformableLieuEntree() { return visaTransformableLieuEntree; }
+    public void setVisaTransformableLieuEntree(String lieu) { this.visaTransformableLieuEntree = lieu; }
+
+    public LocalDate getVisaTransformableDateFinVisa() { return visaTransformableDateFinVisa; }
+    public void setVisaTransformableDateFinVisa(LocalDate d) { this.visaTransformableDateFinVisa = d; }
 
     public Integer getTypeDemandeId() { return typeDemandeId; }
     public void setTypeDemandeId(Integer typeDemandeId) { this.typeDemandeId = typeDemandeId; }
 
-    public String getVisaTransformableNumero() { return visaTransformableNumero; }
-    public void setVisaTransformableNumero(String visaTransformableNumero) { this.visaTransformableNumero = visaTransformableNumero; }
-
-    public LocalDate getVisaTransformableDateEntree() { return visaTransformableDateEntree; }
-    public void setVisaTransformableDateEntree(LocalDate visaTransformableDateEntree) { this.visaTransformableDateEntree = visaTransformableDateEntree; }
-
-    public String getVisaTransformableLieuEntree() { return visaTransformableLieuEntree; }
-    public void setVisaTransformableLieuEntree(String visaTransformableLieuEntree) { this.visaTransformableLieuEntree = visaTransformableLieuEntree; }
-
-    public LocalDate getVisaTransformableDateFinVisa() { return visaTransformableDateFinVisa; }
-    public void setVisaTransformableDateFinVisa(LocalDate visaTransformableDateFinVisa) { this.visaTransformableDateFinVisa = visaTransformableDateFinVisa; }
+    public Integer getTypeVisaId() { return typeVisaId; }
+    public void setTypeVisaId(Integer typeVisaId) { this.typeVisaId = typeVisaId; }
 }

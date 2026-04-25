@@ -14,12 +14,12 @@ public class Passeport {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_individu")
-    private Individu individu;
-
     @Column(name = "numero")
-    private String numeroPass;
+    private String numero;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_demandeur")
+    private Demandeur demandeur;
 
     @Column(name = "date_delivrance")
     private LocalDate dateDelivrance;
@@ -27,57 +27,25 @@ public class Passeport {
     @Column(name = "date_expiration")
     private LocalDate dateExpiration;
 
-    @Column(name = "is_active")
-    private Boolean active;
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
 
-    public Integer getId() {
-        return id;
-    }
+    public Demandeur getDemandeur() { return demandeur; }
+    public void setDemandeur(Demandeur demandeur) { this.demandeur = demandeur; }
 
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public Individu getIndividu() {
-        return individu;
-    }
-
-    public void setIndividu(Individu individu) {
-        this.individu = individu;
-    }
-
-    public String getNumeroPass() { return numeroPass; }
-
-    public void setNumeroPass(String numeroPass) {
-        this.numeroPass = trim(numeroPass);
-        if (this.numeroPass == null || this.numeroPass.isBlank()) {
+    public String getNumero() { return numero; }
+    public void setNumero(String numero) {
+        this.numero = trim(numero);
+        if (this.numero == null || this.numero.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le numéro de passeport est obligatoire");
         }
     }
 
-    public LocalDate getDateDelivrance() {
-        return dateDelivrance;
-    }
+    public LocalDate getDateDelivrance() { return dateDelivrance; }
+    public void setDateDelivrance(LocalDate dateDelivrance) { this.dateDelivrance = dateDelivrance; }
 
-    public void setDateDelivrance(LocalDate dateDelivrance) {
-        this.dateDelivrance = dateDelivrance;
-    }
-
-    public LocalDate getDateExpiration() {
-        return dateExpiration;
-    }
-
-    public void setDateExpiration(LocalDate dateExpiration) {
-        this.dateExpiration = dateExpiration;
-    }
-
-    public Boolean getActive() {
-        return active;
-    }
-
-    public void setActive(Boolean active) {
-        this.active = active;
-    }
+    public LocalDate getDateExpiration() { return dateExpiration; }
+    public void setDateExpiration(LocalDate dateExpiration) { this.dateExpiration = dateExpiration; }
 
     private String trim(String s) { return s == null ? null : s.trim(); }
 }

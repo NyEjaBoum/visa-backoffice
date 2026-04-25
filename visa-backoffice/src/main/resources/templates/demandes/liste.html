@@ -43,8 +43,8 @@
                     <tbody>
                         <tr th:each="d : ${demandes}">
                             <td style="font-weight:600;color:#0f172a;" th:text="${d.numDemande}">MADA-2026-0001</td>
-                            <td th:text="${d.individu?.nom}">NOM</td>
-                            <td th:text="${d.individu?.prenoms}">—</td>
+                            <td th:text="${d.demandeur?.nom}">NOM</td>
+                            <td th:text="${d.demandeur?.prenoms}">—</td>
                             <td th:text="${d.typeVisa?.libelle}">TRAVAILLEUR</td>
                             <td th:text="${d.typeDemande?.libelle}">NOUVEAU TITRE</td>
                             <td>

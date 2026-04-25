@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des antécédents — Visa Backoffice</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+    <style>
+        .autocomplete-wrapper { position: relative; }
+        .autocomplete-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            max-height: 280px;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,.08);
+        }
+        .autocomplete-item {
+            padding: 10px 14px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+        }
+        .autocomplete-item:hover { background: #f8fafc; }
+        .autocomplete-item strong { display: block; color: #0f172a; }
+        .autocomplete-item span { color: #64748b; font-size: 12px; }
+        .found-card {
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 16px;
+        }
+        .found-card .found-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: #16a34a; margin-bottom: 8px; }
+        .found-card .found-name { font-size: 18px; font-weight: 700; color: #0f172a; }
+        .found-card .found-meta { font-size: 13px; color: #475569; margin-top: 4px; }
+        .mode-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+        .mode-tab {
+            padding: 8px 20px;
+            border-radius: 6px;
+            border: 2px solid #e2e8f0;
+            background: #f8fafc;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #475569;
+            transition: all .15s;
+        }
+        .mode-tab.active {
+            border-color: #0ea5e9;
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+        .badge-visa-approuve { background: #dbeafe; color: #1d4ed8; }
+    </style>
+</head>
+<body class="app-body">
+<div class="app-layout">
+
+    <div th:replace="~{fragments/sidebar :: sidebar('antecedents')}"></div>
+
+    <main class="app-content">
+        <div class="page">
+            <div class="page-header">
+                <h1 class="page-title">Gestion des antécédents</h1>
+                <p class="page-subtitle">Duplicata ou transfert — avec ou sans données existantes</p>
+            </div>
+
+            <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}"></div>
+
+            <!-- ── Recherche avec autocomplete ── -->
+            <div class="section">
+                <h2 class="section-title">Recherche d'un dossier existant</h2>
+                <p style="font-size:13px;color:#64748b;margin-bottom:12px;">
+                    Saisir un nom, un numéro de passeport ou un numéro de dossier.
+                    Si trouvé → <strong>Cas Normal</strong>. Sinon → <strong>Saisie de rattrapage</strong>.
+                </p>
+                <div class="autocomplete-wrapper" style="max-width:480px;">
+                    <input type="text" id="searchInput" class="form-input"
+                           placeholder="Ex : DUPONT, AB123456, MADA-2026-0001"
+                           autocomplete="off">
+                    <div class="autocomplete-list" id="autocompleteList" style="display:none;"></div>
+                </div>
+                <button type="button" id="btnRattrapage"
+                        class="btn btn-ghost" style="margin-top:12px;font-size:13px;"
+                        onclick="activerRattrapage()">
+                    Aucun résultat — saisir manuellement (rattrapage)
+                </button>
+            </div>
+
+            <!-- ── CAS NORMAL (individu trouvé) ── -->
+            <div id="sectionCasNormal" style="display:none;">
+                <div class="found-card">
+                    <div class="found-label">Individu trouvé</div>
+                    <div class="found-name" id="foundName">—</div>
+                    <div class="found-meta" id="foundMeta">—</div>
+                </div>
+
+                <form th:action="@{/demandes/antecedents}" th:object="${form}" method="post" id="formCasNormal">
+                    <input type="hidden" name="demandeurId" id="hiddenDemandeurId">
+
+                    <div class="section">
+                        <h2 class="section-title">Visa transformable (preuve d'origine)</h2>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label" for="vtRef1">Référence <span class="req">*</span></label>
+                                <input type="text" id="vtRef1" name="visaTransformableNumero"
+                                       class="form-input" placeholder="Ex : VT-2026-0001" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="vtDateEntree1">Date d'entrée</label>
+                                <input type="date" id="vtDateEntree1" name="visaTransformableDateEntree" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="vtLieu1">Lieu d'entrée</label>
+                                <input type="text" id="vtLieu1" name="visaTransformableLieuEntree"
+                                       class="form-input" placeholder="Aéroport / Port / Frontière">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="vtFin1">Date fin visa</label>
+                                <input type="date" id="vtFin1" name="visaTransformableDateFinVisa" class="form-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h2 class="section-title">Nature de la nouvelle demande</h2>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label" for="typeDemandeNormal">
+                                    Type de demande <span class="req">*</span>
+                                </label>
+                                <select id="typeDemandeNormal" name="typeDemandeId" class="form-select" required>
+                                    <option value="">— Sélectionner —</option>
+                                    <option th:each="td : ${typesDemandeAntecedent}"
+                                            th:value="${td.id}"
+                                            th:text="${td.libelle}"></option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="typeVisaNormal">
+                                    Catégorie visa <span class="req">*</span>
+                                </label>
+                                <select id="typeVisaNormal" name="typeVisaId" class="form-select" required>
+                                    <option value="">— Sélectionner —</option>
+                                    <option th:each="tv : ${typesVisa}"
+                                            th:value="${tv.id}"
+                                            th:text="${tv.libelle}"></option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary-app">Créer la demande</button>
+                        <button type="button" class="btn btn-ghost" onclick="reinitialiser()">Annuler</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ── CAS RATTRAPAGE (individu absent) ── -->
+            <div id="sectionRattrapage" style="display:none;">
+                <div class="alert" style="background:#fef9c3;border:1px solid #fde047;color:#854d0e;border-radius:6px;padding:12px 16px;margin-bottom:16px;">
+                    <strong>Mode rattrapage</strong> — L'individu n'existe pas en base.
+                    Le système créera automatiquement 2 demandes :
+                    une injection (NOUVEAU TITRE / VISA APPROUVÉ) et la demande cible (DUPLICATA ou TRANSFERT).
+                </div>
+
+                <form th:action="@{/demandes/antecedents}" th:object="${form}" method="post" id="formRattrapage">
+                    <!-- Pas d'individuId → rattrapage -->
+
+                    <!-- État civil -->
+                    <div class="section">
+                        <h2 class="section-title">1. État civil</h2>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label" for="rNom">Nom <span class="req">*</span></label>
+                                <input type="text" id="rNom" name="nom" class="form-input"
+                                       placeholder="Nom de famille" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="rPrenoms">Prénoms</label>
+                                <input type="text" id="rPrenoms" name="prenoms" class="form-input" placeholder="Prénoms">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="rNomJF">Nom de jeune fille</label>
+                                <input type="text" id="rNomJF" name="nomJeuneFille" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="rDateNaissance">
+                                    Date de naissance <span class="req">*</span>
+                                </label>
+                                <input type="date" id="rDateNaissance" name="dateNaissance" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="rSitFam">Situation familiale</label>
+                                <select id="rSitFam" name="situationFamilialeId" class="form-select">
+                                    <option value="">— Sélectionner —</option>
+                                    <option th:each="sf : ${situationsFamiliales}"
+                                            th:value="${sf.id}" th:text="${sf.libelle}"></option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="rNationalite">
+                                    Nationalité <span class="req">*</span>
+                                </label>
+                                <select id="rNationalite" name="nationaliteId" class="form-select" required>
+                                    <option value="">— Sélectionner —</option>
+                                    <option th:each="nat : ${nationalites}"
+                                            th:value="${nat.id}" th:text="${nat.libelle}"></option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="rProfession">Profession</label>
+                                <input type="text" id="rProfession" name="profession" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="rAdresse">
+                                    Adresse à Madagascar <span class="req">*</span>
+                                </label>
+                                <input type="text" id="rAdresse" name="adresseMada" class="form-input"
+                                       placeholder="Adresse complète" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="rContact">Contact</label>
+                                <input type="text" id="rContact" name="contactMada" class="form-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Passeport -->
+                    <div class="section">
+                        <h2 class="section-title">2. Passeport</h2>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label" for="rNumPass">
+                                    Numéro <span class="req">*</span>
+                                </label>
+                                <input type="text" id="rNumPass" name="numeroPasseport"
+                                       class="form-input" placeholder="Ex : AB123456" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="rDateDeliv">Date de délivrance</label>
+                                <input type="date" id="rDateDeliv" name="dateDelivrance" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="rDateExp">Date d'expiration</label>
+                                <input type="date" id="rDateExp" name="dateExpiration" class="form-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visa transformable -->
+                    <div class="section">
+                        <h2 class="section-title">3. Visa transformable (carte actuelle)</h2>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label" for="rVtRef">Référence <span class="req">*</span></label>
+                                <input type="text" id="rVtRef" name="visaTransformableNumero"
+                                       class="form-input" placeholder="Ex : VT-2026-0001" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="rVtDateEntree">Date d'entrée</label>
+                                <input type="date" id="rVtDateEntree" name="visaTransformableDateEntree" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="rVtLieu">Lieu d'entrée</label>
+                                <input type="text" id="rVtLieu" name="visaTransformableLieuEntree"
+                                       class="form-input" placeholder="Aéroport / Port / Frontière">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="rVtFin">Date fin visa actuel</label>
+                                <input type="date" id="rVtFin" name="visaTransformableDateFinVisa" class="form-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nature de la demande -->
+                    <div class="section">
+                        <h2 class="section-title">4. Nature de la demande cible</h2>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label" for="rTypeDemande">
+                                    Type de demande <span class="req">*</span>
+                                </label>
+                                <select id="rTypeDemande" name="typeDemandeId" class="form-select" required>
+                                    <option value="">— Sélectionner —</option>
+                                    <option th:each="td : ${typesDemandeAntecedent}"
+                                            th:value="${td.id}" th:text="${td.libelle}"></option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="rTypeVisa">
+                                    Catégorie visa <span class="req">*</span>
+                                </label>
+                                <select id="rTypeVisa" name="typeVisaId" class="form-select" required>
+                                    <option value="">— Sélectionner —</option>
+                                    <option th:each="tv : ${typesVisa}"
+                                            th:value="${tv.id}" th:text="${tv.libelle}"></option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary-app">Enregistrer le rattrapage</button>
+                        <button type="button" class="btn btn-ghost" onclick="reinitialiser()">Annuler</button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </main>
+
+</div>
+
+<script>
+    let debounceTimer;
+
+    document.getElementById('searchInput').addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        const q = this.value.trim();
+        if (q.length < 2) {
+            fermerListe();
+            return;
+        }
+        debounceTimer = setTimeout(() => fetchAutocomplete(q), 300);
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!document.getElementById('searchInput').contains(e.target)) {
+            fermerListe();
+        }
+    });
+
+    function fetchAutocomplete(q) {
+        fetch('/demandes/antecedents/autocomplete?q=' + encodeURIComponent(q))
+            .then(r => r.json())
+            .then(items => afficherListe(items))
+            .catch(() => fermerListe());
+    }
+
+    function afficherListe(items) {
+        const list = document.getElementById('autocompleteList');
+        list.innerHTML = '';
+        if (items.length === 0) {
+            list.style.display = 'none';
+            return;
+        }
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'autocomplete-item';
+            div.innerHTML = `<strong>${item.nom} ${item.prenoms}</strong>
+                <span>Passeport : ${item.passeportNumero || '—'} &nbsp;|&nbsp; Dossier : ${item.demandeNumero || '—'} &nbsp;|&nbsp; ${item.nationalite || ''}</span>`;
+            div.addEventListener('click', () => selectionnerIndividu(item));
+            list.appendChild(div);
+        });
+        list.style.display = 'block';
+    }
+
+    function fermerListe() {
+        document.getElementById('autocompleteList').style.display = 'none';
+    }
+
+    function selectionnerIndividu(item) {
+        fermerListe();
+        document.getElementById('searchInput').value = item.nom + ' ' + item.prenoms;
+        document.getElementById('hiddenDemandeurId').value = item.demandeurId;
+
+        // Afficher la carte
+        document.getElementById('foundName').textContent = item.nom + ' ' + item.prenoms;
+        document.getElementById('foundMeta').textContent =
+            'Nationalité : ' + (item.nationalite || '—') +
+            '  |  Passeport : ' + (item.passeportNumero || '—') +
+            '  |  Dossier : ' + (item.demandeNumero || '—');
+
+        // Pré-remplir visa transformable si disponible
+        if (item.visaTransformableNumero) {
+            document.getElementById('vtRef1').value = item.visaTransformableNumero;
+        }
+        if (item.vtDateEntree) {
+            document.getElementById('vtDateEntree1').value = item.vtDateEntree;
+        }
+        if (item.vtLieuEntree) {
+            document.getElementById('vtLieu1').value = item.vtLieuEntree;
+        }
+        if (item.vtDateFin) {
+            document.getElementById('vtFin1').value = item.vtDateFin;
+        }
+
+        document.getElementById('sectionRattrapage').style.display = 'none';
+        document.getElementById('sectionCasNormal').style.display = 'block';
+    }
+
+    function activerRattrapage() {
+        document.getElementById('sectionCasNormal').style.display = 'none';
+        document.getElementById('sectionRattrapage').style.display = 'block';
+        document.getElementById('hiddenDemandeurId').value = '';
+    }
+
+    function reinitialiser() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('hiddenDemandeurId').value = '';
+        document.getElementById('sectionCasNormal').style.display = 'none';
+        document.getElementById('sectionRattrapage').style.display = 'none';
+    }
+</script>
+</body>
+</html>

@@ -28,6 +28,11 @@ public class TypeDemandeService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de demande introuvable : " + id));
     }
 
+    public TypeDemande findByLibelleOrThrow(String libelle) {
+        return typeDemandeRepository.findByLibelle(libelle)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de demande introuvable : " + libelle));
+    }
+
     @Transactional
     public TypeDemande create(TypeDemande typeDemande) {
         return typeDemandeRepository.save(typeDemande);

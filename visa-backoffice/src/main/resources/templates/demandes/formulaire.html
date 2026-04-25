@@ -99,13 +99,16 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="nationaliteId">Nationalité</label>
-                            <select id="nationaliteId" th:field="*{nationaliteId}" class="form-select">
+                            <label class="form-label" for="nationaliteId">
+                                Nationalité <span class="req">*</span>
+                            </label>
+                            <select id="nationaliteId" th:field="*{nationaliteId}" class="form-select" required>
                                 <option value="">— Sélectionner —</option>
                                 <option th:each="nat : ${nationalites}"
                                         th:value="${nat.id}"
                                         th:text="${nat.libelle}"></option>
                             </select>
+                            <small class="form-error" th:if="${#fields.hasErrors('nationaliteId')}" th:errors="*{nationaliteId}"></small>
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="profession">Profession</label>
@@ -156,8 +159,8 @@
                     <h2 class="section-title">3. Visa transformable</h2>
                     <div class="grid-2">
                         <div class="form-group">
-                            <label class="form-label" for="visaTransformableReference">Référence visa actuel</label>
-                            <input type="text" id="visaTransformableReference" th:field="*{visaTransformableReference}"
+                            <label class="form-label" for="visaTransformableNumero">Référence visa actuel</label>
+                            <input type="text" id="visaTransformableNumero" th:field="*{visaTransformableNumero}"
                                    class="form-input" placeholder="Ex : VT-2026-0001">
                         </div>
                         <div class="form-group">

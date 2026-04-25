@@ -6,5 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface VisaTransformableRepository extends JpaRepository<VisaTransformable, Integer> {
-    Optional<VisaTransformable> findByReference(String reference);
+    Optional<VisaTransformable> findByNumero(String numero);
+    Optional<VisaTransformable> findFirstByDemandeurIdOrderByIdDesc(Integer demandeurId);
+    Optional<VisaTransformable> findFirstByPasseportIdOrderByIdDesc(Integer passeportId);
 }

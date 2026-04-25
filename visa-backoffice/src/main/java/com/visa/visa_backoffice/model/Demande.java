@@ -7,8 +7,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "demande_visa")
-public class DemandeVisa {
+@Table(name = "demande")
+public class Demande {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,12 +18,8 @@ public class DemandeVisa {
     private String numDemande;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_individu")
-    private Individu individu;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_pass")
-    private Passeport passeport;
+    @JoinColumn(name = "id_demandeur")
+    private Demandeur demandeur;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_type_visa")
@@ -41,14 +37,10 @@ public class DemandeVisa {
     @JoinColumn(name = "id_visa_transformable")
     private VisaTransformable visaTransformable;
 
-    @Column(name = "qr_code_token", unique = true)
-    private String qrCodeToken;
-
     @Column(name = "date_creation")
     private LocalDateTime dateCreation;
 
     public Integer getId() { return id; }
-
     public void setId(Integer id) { this.id = id; }
 
     public String getNumDemande() { return numDemande; }
@@ -59,20 +51,12 @@ public class DemandeVisa {
         }
     }
 
-    public Individu getIndividu() { return individu; }
-    public void setIndividu(Individu individu) {
-        if (individu == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Individu obligatoire");
+    public Demandeur getDemandeur() { return demandeur; }
+    public void setDemandeur(Demandeur demandeur) {
+        if (demandeur == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Demandeur obligatoire");
         }
-        this.individu = individu;
-    }
-
-    public Passeport getPasseport() { return passeport; }
-    public void setPasseport(Passeport passeport) {
-        if (passeport == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passeport obligatoire");
-        }
-        this.passeport = passeport;
+        this.demandeur = demandeur;
     }
 
     public TypeVisa getTypeVisa() { return typeVisa; }
@@ -96,9 +80,6 @@ public class DemandeVisa {
 
     public VisaTransformable getVisaTransformable() { return visaTransformable; }
     public void setVisaTransformable(VisaTransformable visaTransformable) { this.visaTransformable = visaTransformable; }
-
-    public String getQrCodeToken() { return qrCodeToken; }
-    public void setQrCodeToken(String qrCodeToken) { this.qrCodeToken = qrCodeToken; }
 
     public LocalDateTime getDateCreation() { return dateCreation; }
     public void setDateCreation(LocalDateTime dateCreation) { this.dateCreation = dateCreation; }

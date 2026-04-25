@@ -5,7 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 @Entity
-@Table(name = "type_demande_visa")
+@Table(name = "type_demande")
 public class TypeDemande {
 
     @Id

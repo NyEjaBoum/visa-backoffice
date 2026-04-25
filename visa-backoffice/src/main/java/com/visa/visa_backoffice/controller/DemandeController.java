@@ -1,31 +1,46 @@
 package com.visa.visa_backoffice.controller;
 
+import com.visa.visa_backoffice.dto.DemandeAntecedentForm;
 import com.visa.visa_backoffice.dto.DemandeForm;
-import com.visa.visa_backoffice.model.DemandeVisa;
-import com.visa.visa_backoffice.service.DemandeVisaService;
+import com.visa.visa_backoffice.model.Demande;
+import com.visa.visa_backoffice.model.DossierComplet;
+import com.visa.visa_backoffice.model.Passeport;
+import com.visa.visa_backoffice.service.DemandeService;
 import com.visa.visa_backoffice.service.NomenclatureService;
+import com.visa.visa_backoffice.service.PasseportService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Controller
 @RequestMapping("/demandes")
 public class DemandeController {
 
-    private final DemandeVisaService demandeVisaService;
+    private final DemandeService demandeService;
     private final NomenclatureService nomenclatureService;
+    private final PasseportService passeportService;
 
-    public DemandeController(DemandeVisaService demandeVisaService,
-                             NomenclatureService nomenclatureService) {
-        this.demandeVisaService = demandeVisaService;
+    public DemandeController(DemandeService demandeService,
+                             NomenclatureService nomenclatureService,
+                             PasseportService passeportService) {
+        this.demandeService = demandeService;
         this.nomenclatureService = nomenclatureService;
+        this.passeportService = passeportService;
     }
+
+    // ─── Sprint 1 ─────────────────────────────────────────────────────────────
 
     @GetMapping
     public String liste(Model model) {
-        model.addAttribute("demandes", demandeVisaService.findAll());
+        model.addAttribute("demandes", demandeService.findAll());
         return "demandes/liste";
     }
 
@@ -42,7 +57,7 @@ public class DemandeController {
                         Model model) {
         try {
             form.validateOrThrow();
-            DemandeVisa demande = demandeVisaService.creer(form);
+            Demande demande = demandeService.creer(form);
             redirectAttrs.addFlashAttribute("successMessage",
                     "Demande créée avec succès. Numéro : " + demande.getNumDemande());
             return "redirect:/demandes/" + demande.getId();
@@ -55,8 +70,12 @@ public class DemandeController {
 
     @GetMapping("/{id}")
     public String detail(@PathVariable Integer id, Model model) {
-        DemandeVisa demande = demandeVisaService.findByIdOrThrow(id);
+        Demande demande = demandeService.findByIdOrThrow(id);
         model.addAttribute("demande", demande);
+        Passeport passeport = passeportService.findLastForDemandeur(
+            demande.getDemandeur() == null ? null : demande.getDemandeur().getId()
+        ).orElse(null);
+        model.addAttribute("passeport", passeport);
         boolean modifiable = demande.getStatut() != null
                 && "CREE".equalsIgnoreCase(demande.getStatut().getLibelle());
         model.addAttribute("modifiable", modifiable);
@@ -65,13 +84,16 @@ public class DemandeController {
 
     @GetMapping("/{id}/modifier")
     public String modifierForm(@PathVariable Integer id, Model model) {
-        DemandeVisa demande = demandeVisaService.findByIdOrThrow(id);
+        Demande demande = demandeService.findByIdOrThrow(id);
 
         if (demande.getStatut() == null || !"CREE".equalsIgnoreCase(demande.getStatut().getLibelle())) {
             return "redirect:/demandes/" + id;
         }
 
-        DemandeForm form = buildFormFromDemande(demande);
+        Passeport passeport = passeportService.findLastForDemandeur(
+            demande.getDemandeur() == null ? null : demande.getDemandeur().getId()
+        ).orElse(null);
+        DemandeForm form = buildFormFromDemande(demande, passeport);
         model.addAttribute("form", form);
         model.addAttribute("demandeId", id);
         model.addAttribute("numDemande", demande.getNumDemande());
@@ -86,7 +108,7 @@ public class DemandeController {
                            Model model) {
         try {
             form.validateOrThrow();
-            demandeVisaService.modifier(id, form);
+            demandeService.modifier(id, form);
             redirectAttrs.addFlashAttribute("successMessage", "Demande mise à jour avec succès.");
             return "redirect:/demandes/" + id;
         } catch (ResponseStatusException e) {
@@ -97,6 +119,71 @@ public class DemandeController {
         }
     }
 
+    // ─── Sprint 2 : Gestion des Antécédents ──────────────────────────────────
+
+    @GetMapping("/antecedents")
+    public String antecedentsForm(Model model) {
+        model.addAttribute("form", new DemandeAntecedentForm());
+        chargerNomenclaturesSprint2(model);
+        return "demandes/antecedents";
+    }
+
+    @GetMapping("/antecedents/autocomplete")
+    @ResponseBody
+    public ResponseEntity<List<Map<String, Object>>> autocomplete(
+            @RequestParam(required = false, defaultValue = "") String q) {
+        if (q.isBlank()) {
+            return ResponseEntity.ok(List.of());
+        }
+        List<DossierComplet> resultats = demandeService.rechercherAntecedents(q.trim());
+        List<Map<String, Object>> items = resultats.stream().map(d -> {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("demandeurId", d.getDemandeurId());
+            item.put("nom", d.getNom() != null ? d.getNom() : "");
+            item.put("prenoms", d.getPrenoms() != null ? d.getPrenoms() : "");
+            item.put("nationalite", d.getNationalite() != null ? d.getNationalite() : "");
+            item.put("dateNaissance", d.getDateNaissance() != null ? d.getDateNaissance().toString() : "");
+            item.put("adresseMada", d.getAdresseMada() != null ? d.getAdresseMada() : "");
+            item.put("passeportNumero", d.getPasseportNumero() != null ? d.getPasseportNumero() : "");
+            item.put("passeportId", d.getPasseportId() != null ? d.getPasseportId() : "");
+            item.put("demandeNumero", d.getDemandeNumero() != null ? d.getDemandeNumero() : "");
+            item.put("visaTransformableNumero", d.getVisaTransformableNumero() != null ? d.getVisaTransformableNumero() : "");
+            item.put("vtDateEntree", d.getVtDateEntree() != null ? d.getVtDateEntree().toString() : "");
+            item.put("vtLieuEntree", d.getVtLieuEntree() != null ? d.getVtLieuEntree() : "");
+            item.put("vtDateFin", d.getVtDateFin() != null ? d.getVtDateFin().toString() : "");
+            return item;
+        }).collect(Collectors.toList());
+        return ResponseEntity.ok(items);
+    }
+
+    @PostMapping("/antecedents")
+    public String creerAntecedent(@ModelAttribute("form") DemandeAntecedentForm form,
+                                  RedirectAttributes redirectAttrs,
+                                  Model model) {
+        try {
+            if (form.getDemandeurId() != null) {
+                form.validateCasNormal();
+                Demande demande = demandeService.creerCasNormal(form);
+                redirectAttrs.addFlashAttribute("successMessage",
+                        "Demande créée avec succès. Numéro : " + demande.getNumDemande());
+                return "redirect:/demandes/" + demande.getId();
+            } else {
+                form.validateRattrapage();
+                List<Demande> demandes = demandeService.creerRattrapage(form);
+                redirectAttrs.addFlashAttribute("successMessage",
+                        "Dossier de rattrapage créé. Injection : " + demandes.get(0).getNumDemande()
+                        + " | Demande cible : " + demandes.get(1).getNumDemande());
+                return "redirect:/demandes/" + demandes.get(1).getId();
+            }
+        } catch (ResponseStatusException e) {
+            model.addAttribute("errorMessage", e.getReason());
+            chargerNomenclaturesSprint2(model);
+            return "demandes/antecedents";
+        }
+    }
+
+    // ─── Helpers ──────────────────────────────────────────────────────────────
+
     private void chargerNomenclatures(Model model) {
         model.addAttribute("typesVisa", nomenclatureService.getTypesVisa());
         model.addAttribute("typesDemande", nomenclatureService.getTypesDemande());
@@ -104,30 +191,41 @@ public class DemandeController {
         model.addAttribute("situationsFamiliales", nomenclatureService.getSituationsFamiliales());
     }
 
-    private DemandeForm buildFormFromDemande(DemandeVisa demande) {
+    private void chargerNomenclaturesSprint2(Model model) {
+        model.addAttribute("typesVisa", nomenclatureService.getTypesVisa());
+        model.addAttribute("typesDemandeAntecedent", nomenclatureService.getTypesDemande().stream()
+            .filter(td -> td.getLibelle() != null
+                && ("DUPLICATA".equalsIgnoreCase(td.getLibelle())
+                || "TRANSFERT".equalsIgnoreCase(td.getLibelle())))
+                .collect(Collectors.toList()));
+        model.addAttribute("nationalites", nomenclatureService.getNationalites());
+        model.addAttribute("situationsFamiliales", nomenclatureService.getSituationsFamiliales());
+    }
+
+    private DemandeForm buildFormFromDemande(Demande demande, Passeport passeport) {
         DemandeForm form = new DemandeForm();
-        if (demande.getIndividu() != null) {
-            var ind = demande.getIndividu();
-            form.setNom(ind.getNom());
-            form.setPrenoms(ind.getPrenoms());
-            form.setNomJeuneFille(ind.getNomJeuneFille());
-            form.setDateNaissance(ind.getDateNaissance());
-            form.setProfession(ind.getProfession());
-            form.setAdresseMada(ind.getAdresseMada());
-            form.setContactMada(ind.getContactMada());
-            if (ind.getNationalite() != null) form.setNationaliteId(ind.getNationalite().getId());
-            if (ind.getSituationFamiliale() != null) form.setSituationFamilialeId(ind.getSituationFamiliale().getId());
+        if (demande.getDemandeur() != null) {
+            var d = demande.getDemandeur();
+            form.setNom(d.getNom());
+            form.setPrenoms(d.getPrenoms());
+            form.setNomJeuneFille(d.getNomJeuneFille());
+            form.setDateNaissance(d.getDateNaissance());
+            form.setProfession(d.getProfession());
+            form.setAdresseMada(d.getAdresseMada());
+            form.setContactMada(d.getContactMada());
+            if (d.getNationalite() != null) form.setNationaliteId(d.getNationalite().getId());
+            if (d.getSituationFamiliale() != null) form.setSituationFamilialeId(d.getSituationFamiliale().getId());
         }
-        if (demande.getPasseport() != null) {
-            form.setNumeroPasseport(demande.getPasseport().getNumeroPass());
-            form.setDateDelivrance(demande.getPasseport().getDateDelivrance());
-            form.setDateExpiration(demande.getPasseport().getDateExpiration());
+        if (passeport != null) {
+            form.setNumeroPasseport(passeport.getNumero());
+            form.setDateDelivrance(passeport.getDateDelivrance());
+            form.setDateExpiration(passeport.getDateExpiration());
         }
         if (demande.getTypeVisa() != null) form.setTypeVisaId(demande.getTypeVisa().getId());
         if (demande.getTypeDemande() != null) form.setTypeDemandeId(demande.getTypeDemande().getId());
         if (demande.getVisaTransformable() != null) {
             var vt = demande.getVisaTransformable();
-            form.setVisaTransformableReference(vt.getReference());
+            form.setVisaTransformableNumero(vt.getNumero());
             form.setVisaTransformableDateEntree(vt.getDateEntree());
             form.setVisaTransformableLieuEntree(vt.getLieuEntree());
             form.setVisaTransformableDateFinVisa(vt.getDateFinVisa());

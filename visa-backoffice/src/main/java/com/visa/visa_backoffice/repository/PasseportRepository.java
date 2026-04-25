@@ -3,4 +3,8 @@ package com.visa.visa_backoffice.repository;
 import com.visa.visa_backoffice.model.Passeport;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface PasseportRepository extends JpaRepository<Passeport, Integer> {}
+import java.util.Optional;
+
+public interface PasseportRepository extends JpaRepository<Passeport, Integer> {
+    Optional<Passeport> findFirstByDemandeurIdOrderByIdDesc(Integer demandeurId);
+}
