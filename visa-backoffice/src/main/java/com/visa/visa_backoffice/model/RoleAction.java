@@ -7,15 +7,20 @@ import jakarta.persistence.*;
 public class RoleAction {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_role")
-    private Role role;
+    @Column(name = "role_code")
+    private String roleCode;
 
-    @Column(name = "nom_action")
-    private String nomAction;
+    private String action;
 
     public Integer getId() { return id; }
-    public String getNomAction() { return nomAction; }
+    public void setId(Integer id) { this.id = id; }
+
+    public String getRoleCode() { return roleCode; }
+    public void setRoleCode(String roleCode) { this.roleCode = roleCode; }
+
+    public String getAction() { return action; }
+    public void setAction(String action) { this.action = action; }
 }

@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface StatutRepository extends JpaRepository<Statut, Integer> {
-    Optional<Statut> findByLibelleIgnoreCase(String libelle);
+    Optional<Statut> findByLibelle(String libelle);
 }

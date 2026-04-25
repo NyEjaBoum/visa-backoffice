@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title} + ' — Visa Backoffice'">Formulaire</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body class="app-body">
+<div class="app-layout">
+
+    <div th:replace="~{fragments/sidebar :: sidebar('demandes')}"></div>
+
+    <main class="app-content">
+        <div class="page">
+            <div class="page-header">
+                <h1 class="page-title" th:text="${title}">Formulaire</h1>
+            </div>
+
+            <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}"></div>
+
+            <form th:action="@{${formAction}}" th:object="${item}" method="post">
+                <div class="section">
+                    <h2 class="section-title">Informations</h2>
+                    <div class="grid-2">
+                        <div class="form-group" th:if="${idEditable}">
+                            <label class="form-label" for="id">Id <span class="req">*</span></label>
+                            <input type="number" id="id" th:field="*{id}" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="libelle">Libellé <span class="req">*</span></label>
+                            <input type="text" id="libelle" th:field="*{libelle}" class="form-input" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary-app" th:text="${submitLabel}">Enregistrer</button>
+                    <a th:href="@{${basePath}}" class="btn btn-ghost">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </main>
+
+</div>
+</body>
+</html>

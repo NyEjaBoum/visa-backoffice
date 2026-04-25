@@ -1,0 +1,14 @@
+créer demande dia migenerer qr code : url afaka manaraka suivi
+
+rehefa misy tsy feno ny optionnel dia insererna ihany fa tsy afaka manohy etape manaraka
+
+
+sprint 1 : saisie demande type visa travailleur ou investisseur, piece justificative
+
+sprint 2: sans donnees anterieur mais meme que un , provoque decision automatique, decision approuve et demande visa ou duplicata, demande miaraka
+
+sprint 3: scan termine pour cette demande, mais le dossier doit etre feno, toutes les piece justificative, upload par piece , piece justificative ray fichier ray
+
+sprint 4: apres creation demande on pourra generer qr code et ca pourra marcher dans une autre application vue js et ca communique via api
+un seul champ, : numero passeport ou bien numero demande 
+pour toutes les demandes, tu vois tout les historiques des statut pour chaque demande non pas historique actuelle 

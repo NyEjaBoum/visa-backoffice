@@ -4,45 +4,44 @@ import com.visa.visa_backoffice.model.TypeDemande;
 import com.visa.visa_backoffice.repository.TypeDemandeRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
+@Transactional(readOnly = true)
 public class TypeDemandeService {
 
-    private final TypeDemandeRepository repo;
+    private final TypeDemandeRepository typeDemandeRepository;
 
-    public TypeDemandeService(TypeDemandeRepository repo) {
-        this.repo = repo;
+    public TypeDemandeService(TypeDemandeRepository typeDemandeRepository) {
+        this.typeDemandeRepository = typeDemandeRepository;
     }
 
     public List<TypeDemande> findAll() {
-        return repo.findAll();
+        return typeDemandeRepository.findAll();
     }
 
-    public Optional<TypeDemande> findById(Integer id) {
-        return repo.findById(id);
+    public TypeDemande findById(Integer id) {
+        return typeDemandeRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de demande introuvable : " + id));
     }
 
-    public TypeDemande getOrThrow(Integer id) {
-        return repo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de demande introuvable"));
+    public TypeDemande findByLibelleOrThrow(String libelle) {
+        return typeDemandeRepository.findByLibelle(libelle)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de demande introuvable : " + libelle));
     }
 
+    @Transactional
     public TypeDemande create(TypeDemande typeDemande) {
-        return repo.save(typeDemande);
+        return typeDemandeRepository.save(typeDemande);
     }
 
-    public TypeDemande update(Integer id, TypeDemande typeDemande) {
-        // Nomenclature: pas de setters -> on ne supporte pas l'update ici
-        getOrThrow(id);
-        throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "Type de demande non modifiable");
-    }
-
-    public void delete(Integer id) {
-        getOrThrow(id);
-        repo.deleteById(id);
+    @Transactional
+    public TypeDemande update(Integer id, TypeDemande payload) {
+        TypeDemande existing = findById(id);
+        existing.setLibelle(payload.getLibelle());
+        return typeDemandeRepository.save(existing);
     }
 }

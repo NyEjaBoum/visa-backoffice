@@ -1,6 +1,8 @@
 package com.visa.visa_backoffice.model;
 
 import jakarta.persistence.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 
@@ -12,16 +14,16 @@ public class VisaTransformable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_individu")
-    private Individu individu;
+    @Column(name = "numero", nullable = false, unique = true)
+    private String numero;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_passeport")
     private Passeport passeport;
 
-    @Column(name = "numero_reference", unique = true)
-    private String numeroReference;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_demandeur")
+    private Demandeur demandeur;
 
     @Column(name = "date_entree")
     private LocalDate dateEntree;
@@ -33,21 +35,27 @@ public class VisaTransformable {
     private LocalDate dateFinVisa;
 
     public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
 
-    public Individu getIndividu() { return individu; }
-    public void setIndividu(Individu individu) { this.individu = individu; }
+    public String getNumero() { return numero; }
+    public void setNumero(String numero) {
+        this.numero = numero == null ? null : numero.trim();
+        if (this.numero == null || this.numero.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le numéro du visa transformable est obligatoire");
+        }
+    }
 
     public Passeport getPasseport() { return passeport; }
     public void setPasseport(Passeport passeport) { this.passeport = passeport; }
 
-    public String getNumeroReference() { return numeroReference; }
-    public void setNumeroReference(String numeroReference) { this.numeroReference = numeroReference; }
+    public Demandeur getDemandeur() { return demandeur; }
+    public void setDemandeur(Demandeur demandeur) { this.demandeur = demandeur; }
 
     public LocalDate getDateEntree() { return dateEntree; }
     public void setDateEntree(LocalDate dateEntree) { this.dateEntree = dateEntree; }
 
     public String getLieuEntree() { return lieuEntree; }
-    public void setLieuEntree(String lieuEntree) { this.lieuEntree = lieuEntree; }
+    public void setLieuEntree(String lieuEntree) { this.lieuEntree = lieuEntree == null ? null : lieuEntree.trim(); }
 
     public LocalDate getDateFinVisa() { return dateFinVisa; }
     public void setDateFinVisa(LocalDate dateFinVisa) { this.dateFinVisa = dateFinVisa; }

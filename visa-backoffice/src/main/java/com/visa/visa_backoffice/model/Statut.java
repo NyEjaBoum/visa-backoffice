@@ -1,6 +1,8 @@
 package com.visa.visa_backoffice.model;
 
 import jakarta.persistence.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Entity
 @Table(name = "statut")
@@ -12,4 +14,15 @@ public class Statut {
 
     public Integer getId() { return id; }
     public String getLibelle() { return libelle; }
+
+    public void setId(Integer id) { this.id = id; }
+    public void setLibelle(String libelle) {
+        this.libelle = trim(libelle);
+        if (blank(this.libelle)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Libellé statut obligatoire");
+        }
+    }
+
+    private boolean blank(String s) { return s == null || s.isBlank(); }
+    private String trim(String s) { return s == null ? null : s.trim(); }
 }

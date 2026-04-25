@@ -2,7 +2,6 @@ package com.visa.visa_backoffice.service;
 
 import com.visa.visa_backoffice.model.VisaTransformable;
 import com.visa.visa_backoffice.repository.VisaTransformableRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -10,20 +9,17 @@ import org.springframework.http.HttpStatus;
 import java.util.Optional;
 
 @Service
+@Transactional
 public class VisaTransformableService {
-    private final VisaTransformableRepository repo;
-    public VisaTransformableService(VisaTransformableRepository repo) { this.repo = repo; }
 
-    public List<VisaTransformable> findAll() { return repo.findAll(); }
-    public Optional<VisaTransformable> findById(Integer id) { return repo.findById(id); }
+    private final VisaTransformableRepository visaTransformableRepository;
 
-    public VisaTransformable getOrThrow(Integer id) {
-        return repo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Visa transformable introuvable"));
+    public VisaTransformableService(VisaTransformableRepository visaTransformableRepository) {
+        this.visaTransformableRepository = visaTransformableRepository;
     }
 
-    public Optional<VisaTransformable> findByNumeroReference(String ref) {
-        return repo.findByNumeroReference(ref);
+    public VisaTransformable save(VisaTransformable vt) {
+        return visaTransformableRepository.save(vt);
     }
 
     @Transactional(readOnly = true)
@@ -38,9 +34,10 @@ public class VisaTransformableService {
         return visaTransformableRepository.findByNumero(numero.trim());
     }
 
-    public void delete(Integer id) {
-        getOrThrow(id);
-        repo.deleteById(id);
+    @Transactional(readOnly = true)
+    public Optional<VisaTransformable> findLastForDemandeur(Integer demandeurId) {
+        if (demandeurId == null) return Optional.empty();
+        return visaTransformableRepository.findFirstByDemandeurIdOrderByIdDesc(demandeurId);
     }
 
     public VisaTransformable update(Integer id, VisaTransformable payload) {

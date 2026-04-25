@@ -100,6 +100,20 @@ public class DemandeService {
         passeport.setDateExpiration(form.getDateExpiration());
         passeport = passeportService.create(demandeur.getId(), passeport);
 
+        VisaTransformable visaTransformable = null;
+        String vtNum = form.getVisaTransformableNumero();
+        if (vtNum != null && !vtNum.isBlank()) {
+            visaTransformable = new VisaTransformable();
+            visaTransformable.setPasseport(passeport);
+            visaTransformable.setDemandeur(demandeur);
+            visaTransformable.setNumero(vtNum);
+            visaTransformable.setDateEntree(form.getVisaTransformableDateEntree());
+            visaTransformable.setLieuEntree(form.getVisaTransformableLieuEntree());
+            visaTransformable.setDateFinVisa(form.getVisaTransformableDateFinVisa());
+            visaTransformable = visaTransformableService.save(visaTransformable);
+        }
+
+
         // 3. Demande
         Demande demande = new Demande();
         demande.setNumDemande(genererNumeroDossier());
@@ -108,7 +122,10 @@ public class DemandeService {
         demande.setTypeDemande(typeDemandeService.findById(form.getTypeDemandeId()));
         demande.setStatut(statutService.getStatutCree());
         demande.setDateCreation(LocalDateTime.now());
+        demande.setVisaTransformable(visaTransformable);
         demande = demandeRepository.save(demande);
+
+        
 
         HistoriqueStatutDemande historique = historiqueDemandeStatutService.creer(demande, demande.getStatut());
 
@@ -154,13 +171,25 @@ public class DemandeService {
         }
 
         VisaTransformable vt = visaTransformableService.findLastForDemandeur(demandeur.getId()).orElse(null);
-        if (vt != null) {
-            vt.setNumero(form.getVisaTransformableNumero());
-            vt.setDateEntree(form.getVisaTransformableDateEntree());
-            vt.setLieuEntree(form.getVisaTransformableLieuEntree());
-            vt.setDateFinVisa(form.getVisaTransformableDateFinVisa());
-            visaTransformableService.update(vt.getId(), vt);
-
+        String vtNum = form.getVisaTransformableNumero();
+        if (vtNum != null && !vtNum.isBlank()) {
+            if (vt != null) {
+                vt.setNumero(vtNum);
+                vt.setDateEntree(form.getVisaTransformableDateEntree());
+                vt.setLieuEntree(form.getVisaTransformableLieuEntree());
+                vt.setDateFinVisa(form.getVisaTransformableDateFinVisa());
+                vt = visaTransformableService.update(vt.getId(), vt);
+            } else {
+                vt = new VisaTransformable();
+                vt.setPasseport(passeport);
+                vt.setDemandeur(demandeur);
+                vt.setNumero(vtNum);
+                vt.setDateEntree(form.getVisaTransformableDateEntree());
+                vt.setLieuEntree(form.getVisaTransformableLieuEntree());
+                vt.setDateFinVisa(form.getVisaTransformableDateFinVisa());
+                vt = visaTransformableService.save(vt);
+            }
+            demande.setVisaTransformable(vt);
         }
 
         // HistoriqueStatutDemande historique = historiqueDemandeStatutService.findByIdOrThrow(demande.getHistoriqueStatutDemande().getId());

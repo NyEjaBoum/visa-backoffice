@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion — Visa Backoffice</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body class="login-body">
+<div class="main-container">
+
+    <div class="login-section">
+        <div class="form-wrapper">
+            <div class="visa-logo">Visa<span style="color:#0ea5e9;font-style:normal;">Back</span></div>
+
+            <div class="header-text">
+                <h2>Bon retour</h2>
+                <p>Connectez-vous à votre espace opérateur</p>
+            </div>
+
+            <div th:if="${param.error}" class="alert alert-error">
+                Identifiant ou mot de passe incorrect.
+            </div>
+            <div th:if="${param.logout}" class="alert alert-success">
+                Vous avez été déconnecté avec succès.
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}"></div>
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+            <form th:action="@{/login}" method="post">
+                <div class="input-group">
+                    <label for="username">Identifiant</label>
+                    <input type="text" id="username" name="username"
+                           placeholder="Votre identifiant" required autofocus>
+                </div>
+                <div class="input-group">
+                    <label for="password">Mot de passe</label>
+                    <input type="password" id="password" name="password"
+                           placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-primary">Se connecter</button>
+            </form>
+
+            <div class="footer-terms">© 2026 Visa Backoffice — Tous droits réservés</div>
+        </div>
+    </div>
+
+    <div class="hero-section hero-image-bg"></div>
+
+</div>
+</body>
+</html>

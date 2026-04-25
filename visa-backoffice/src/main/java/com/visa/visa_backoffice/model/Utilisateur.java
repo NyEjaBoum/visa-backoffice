@@ -12,13 +12,15 @@ public class Utilisateur {
 
     private String identifiant;
     private String mdp;
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "id_role")
-    private Role role;
+    private String role;
 
     public Integer getId() { return id; }
     public String getIdentifiant() { return identifiant; }
     public String getMdp() { return mdp; }
-    public Role getRole() { return role; }
+    public String getRole() { return role; }
+
+    public void setId(Integer id) { this.id = id; }
+    public void setIdentifiant(String identifiant) { this.identifiant = identifiant; }
+    public void setMdp(String mdp) { this.mdp = mdp; }
+    public void setRole(String role) { this.role = role; }
 }
