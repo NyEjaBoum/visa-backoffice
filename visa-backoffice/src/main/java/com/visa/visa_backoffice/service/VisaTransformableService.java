@@ -4,9 +4,9 @@ import com.visa.visa_backoffice.model.VisaTransformable;
 import com.visa.visa_backoffice.repository.VisaTransformableRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
+import org.springframework.http.HttpStatus;
 import java.util.Optional;
 
 @Service
@@ -26,21 +26,29 @@ public class VisaTransformableService {
         return repo.findByNumeroReference(ref);
     }
 
-    public VisaTransformable create(VisaTransformable v) { return repo.save(v); }
+    @Transactional(readOnly = true)
+    public VisaTransformable findByIdOrThrow(Integer id) {
+        return visaTransformableRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "VisaTransformable introuvable : " + id));
+    }
 
-    public VisaTransformable update(Integer id, VisaTransformable v) {
-        VisaTransformable existing = getOrThrow(id);
-        existing.setIndividu(v.getIndividu());
-        existing.setPasseport(v.getPasseport());
-        existing.setNumeroReference(v.getNumeroReference());
-        existing.setDateEntree(v.getDateEntree());
-        existing.setLieuEntree(v.getLieuEntree());
-        existing.setDateFinVisa(v.getDateFinVisa());
-        return repo.save(existing);
+    @Transactional(readOnly = true)
+    public Optional<VisaTransformable> findByNumero(String numero) {
+        if (numero == null || numero.isBlank()) return Optional.empty();
+        return visaTransformableRepository.findByNumero(numero.trim());
     }
 
     public void delete(Integer id) {
         getOrThrow(id);
         repo.deleteById(id);
+    }
+
+    public VisaTransformable update(Integer id, VisaTransformable payload) {
+        VisaTransformable existing = findByIdOrThrow(id);
+        existing.setNumero(payload.getNumero());
+        existing.setDateEntree(payload.getDateEntree());
+        existing.setLieuEntree(payload.getLieuEntree());
+        existing.setDateFinVisa(payload.getDateFinVisa());
+        return visaTransformableRepository.save(existing);
     }
 }

@@ -1,41 +1,62 @@
 package com.visa.visa_backoffice.service;
 
+import com.visa.visa_backoffice.model.Demande;
 import com.visa.visa_backoffice.model.PieceFournie;
+import com.visa.visa_backoffice.model.PieceJustificative;
 import com.visa.visa_backoffice.repository.PieceFournieRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 @Service
+@Transactional
 public class PieceFournieService {
 
-    private final PieceFournieRepository repo;
+    private final PieceFournieRepository pieceFournieRepository;
 
-    public PieceFournieService(PieceFournieRepository repo) {
-        this.repo = repo;
+    public PieceFournieService(PieceFournieRepository pieceFournieRepository) {
+        this.pieceFournieRepository = pieceFournieRepository;
     }
 
-    public List<PieceFournie> findAll() { return repo.findAll(); }
-
-    public Optional<PieceFournie> findById(Integer id) { return repo.findById(id); }
-
-    public List<PieceFournie> findByDemandeId(Integer demandeId) {
-        return repo.findByDemandeIdOrderByIdAsc(demandeId);
+    @Transactional(readOnly = true)
+    public List<Integer> findPresentPieceIds(Integer demandeId) {
+        if (demandeId == null) {
+            return List.of();
+        }
+        return pieceFournieRepository.findPresentPieceIds(demandeId);
     }
 
-    public PieceFournie create(PieceFournie p) { return repo.save(p); }
-
-    public PieceFournie update(Integer id, PieceFournie p) {
-        PieceFournie existing = repo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Piece fournie introuvable"));
-        existing.setDemande(p.getDemande());
-        existing.setLibellePiece(p.getLibellePiece());
-        existing.setPresent(p.getPresent());
-        return repo.save(existing);
+    @Transactional(readOnly = true)
+    public List<PieceFournie> findAllForDemande(Integer demandeId) {
+        if (demandeId == null) {
+            return List.of();
+        }
+        return pieceFournieRepository.findAllForDemande(demandeId);
     }
 
-    public void delete(Integer id) { repo.deleteById(id); }
+    public void creerChecklist(Demande demande,
+                               List<PieceJustificative> pieces,
+                               List<Integer> checkedPieceIds) {
+        if (demande == null || pieces == null || pieces.isEmpty()) {
+            return;
+        }
+        List<Integer> checked = checkedPieceIds == null ? Collections.emptyList() : checkedPieceIds;
+        for (PieceJustificative pj : pieces) {
+            PieceFournie pf = new PieceFournie();
+            pf.setDemande(demande);
+            pf.setPieceJustificative(pj);
+            pf.setIsPresent(checked.contains(pj.getId()));
+            pieceFournieRepository.save(pf);
+        }
+    }
+
+    public void updateChecklist(Demande demande,
+                                List<PieceJustificative> pieces,
+                                List<Integer> checkedPieceIds) {
+        if (demande == null) return;
+        pieceFournieRepository.deleteAllByDemande_Id(demande.getId());
+        creerChecklist(demande, pieces, checkedPieceIds);
+    }
 }

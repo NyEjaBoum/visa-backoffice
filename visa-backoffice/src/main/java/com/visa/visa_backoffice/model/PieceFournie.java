@@ -2,6 +2,8 @@ package com.visa.visa_backoffice.model;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "piece_fournie")
 public class PieceFournie {
@@ -12,39 +14,30 @@ public class PieceFournie {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_demande")
-    private DemandeVisa demande;
+    private Demande demande;
 
-    @Column(name = "libelle_piece")
-    private String libellePiece;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_piece_justificative")
+    private PieceJustificative pieceJustificative;
 
     @Column(name = "is_present")
-    private Boolean present;
+    private Boolean isPresent;
 
-    public Integer getId() {
-        return id;
-    }
+    @Column(name = "date_upload")
+    private LocalDateTime dateUpload;
 
-    public DemandeVisa getDemande() {
-        return demande;
-    }
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
 
-    public void setDemande(DemandeVisa demande) {
-        this.demande = demande;
-    }
+    public Demande getDemande() { return demande; }
+    public void setDemande(Demande demande) { this.demande = demande; }
 
-    public String getLibellePiece() {
-        return libellePiece;
-    }
+    public PieceJustificative getPieceJustificative() { return pieceJustificative; }
+    public void setPieceJustificative(PieceJustificative pieceJustificative) { this.pieceJustificative = pieceJustificative; }
 
-    public void setLibellePiece(String libellePiece) {
-        this.libellePiece = libellePiece;
-    }
+    public Boolean getIsPresent() { return isPresent; }
+    public void setIsPresent(Boolean present) { isPresent = present; }
 
-    public Boolean getPresent() {
-        return present;
-    }
-
-    public void setPresent(Boolean present) {
-        this.present = present;
-    }
+    public LocalDateTime getDateUpload() { return dateUpload; }
+    public void setDateUpload(LocalDateTime dateUpload) { this.dateUpload = dateUpload; }
 }
