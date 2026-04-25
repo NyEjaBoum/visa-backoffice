@@ -12,7 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-
+import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 public class DemandeService {
@@ -29,6 +29,7 @@ public class DemandeService {
     private final PieceFournieService pieceFournieService;
     private final PieceJustificativeService pieceJustificativeService;
     private final VisaTransformableService visaTransformableService;
+    private final HistoriqueStatutDemandeService historiqueDemandeStatutService;
 
     public DemandeService(DemandeRepository demandeRepository,
                           DemandeurService demandeurService,
@@ -41,7 +42,8 @@ public class DemandeService {
                           DossierCompletRepository dossierCompletRepository,
                           PieceFournieService pieceFournieService,
                           PieceJustificativeService pieceJustificativeService,
-                          VisaTransformableService visaTransformableService) {
+                          VisaTransformableService visaTransformableService,
+                          HistoriqueStatutDemandeService historiqueDemandeStatutService) {
         this.demandeRepository = demandeRepository;
         this.demandeurService = demandeurService;
         this.passeportService = passeportService;
@@ -54,6 +56,7 @@ public class DemandeService {
         this.pieceFournieService = pieceFournieService;
         this.pieceJustificativeService = pieceJustificativeService;
         this.visaTransformableService = visaTransformableService;
+        this.historiqueDemandeStatutService = historiqueDemandeStatutService;
     }
 
     @Transactional(readOnly = true)
@@ -72,6 +75,8 @@ public class DemandeService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Demande introuvable"));
     }
 
+
+    @Transactional
     public Demande creer(DemandeForm form) {
         // 1. Demandeur
         Demandeur demandeur = new Demandeur();
@@ -105,6 +110,8 @@ public class DemandeService {
         demande.setDateCreation(LocalDateTime.now());
         demande = demandeRepository.save(demande);
 
+        HistoriqueStatutDemande historique = historiqueDemandeStatutService.creer(demande, demande.getStatut());
+
         // 4. Pièces justificatives
         pieceFournieService.creerChecklist(
                 demande,
@@ -114,6 +121,7 @@ public class DemandeService {
         return demande;
     }
 
+    @Transactional
     public Demande modifier(Integer id, DemandeForm form) {
         Demande demande = findByIdOrThrow(id);
 
@@ -154,6 +162,11 @@ public class DemandeService {
             visaTransformableService.update(vt.getId(), vt);
 
         }
+
+        // HistoriqueStatutDemande historique = historiqueDemandeStatutService.findByIdOrThrow(demande.getHistoriqueStatutDemande().getId());
+        // historique.setDemande(demande);
+        // historique.setStatut(demande.getStatut());
+        // historiqueDemandeStatutService.update(historique.getId(), historique);
 
         // 3. Update Demande
         demande.setTypeVisa(typeVisaService.findById(form.getTypeVisaId()));
