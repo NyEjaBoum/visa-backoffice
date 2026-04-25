@@ -134,6 +134,20 @@
                 </div>
             </div>
 
+            <!-- Pièces justificatives fournies -->
+            <div class="section" th:if="${!#lists.isEmpty(piecesFournies)}">
+                <h2 class="section-title">4. Pièces justificatives fournies</h2>
+                <div class="grid-2">
+                    <div class="field-block" th:each="pf : ${piecesFournies}">
+                        <span class="field-label" th:text="${pf.pieceJustificative.libelle}">Pièce</span>
+                        <span class="field-value"
+                              th:text="${pf.isPresent == true} ? '✔ Fournie' : '✘ Non fournie'"
+                              th:style="${pf.isPresent == true} ? 'color:#16a34a;font-weight:600' : 'color:#dc2626;'">
+                        </span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Actions -->
             <div class="form-actions">
                 <a th:if="${modifiable}"

@@ -10,6 +10,7 @@
     <include file="sprint1/02_metier.sql" relativeToChangelogFile="true"/>
     <include file="sprint1/03_historique_pieces_resultats.sql" relativeToChangelogFile="true"/>
     <include file="sprint1/04_data_referentiels.sql" relativeToChangelogFile="true"/>
+    <include file="sprint1/05_piece_justificative_data.sql" relativeToChangelogFile="true"/>
 
     <!-- ===== SPRINT 2 — Gestion des antecedents (rattrapage / duplicata / transfert) ===== -->
     <include file="sprint2/01_statut_visa_approuve.sql" relativeToChangelogFile="true"/>

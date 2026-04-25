@@ -199,8 +199,10 @@
                 </div>
 
                 <!-- Pièces justificatives (Sprint 1 : nouveau titre) -->
-                <div class="section" id="piecesSection" style="display:none;">
-                    <h2 class="section-title">4. Pièces justificatives fournies</h2>
+<div class="section" id="piecesSection" 
+     th:style="${form.typeDemandeId != null} ? 'display:block' : 'display:none'">
+    
+    <h2 class="section-title">4. Pièces justificatives fournies</h2>
                     <p class="page-subtitle" style="margin-bottom:12px;">
                         Cocher les pièces déjà fournies pour cette demande.
                     </p>
@@ -278,17 +280,39 @@
             info.style.display = 'flex';
         }
 
+        /**
+         * Gère l'affichage de la section des pièces selon le type de demande
+         */
+        function togglePiecesSection() {
+            if (!piecesSection || !typeDemandeSelect) return;
+            
+            const selectedText = (typeDemandeSelect.options[typeDemandeSelect.selectedIndex]?.text || '').trim();
+            // Affiche si "Nouveau Titre" (insensible à la casse)
+            const isNouveauTitre = selectedText.toUpperCase() === 'NOUVEAU TITRE';
+            
+            if (isNouveauTitre) {
+                piecesSection.style.display = 'block';
+            } else {
+                piecesSection.style.display = 'none';
+                // Optionnel : décocher les pièces si on change pour un type (ex: Duplicata) qui n'en a pas besoin
+                document.querySelectorAll('input[type="checkbox"][data-piece-id]').forEach(cb => cb.checked = false);
+            }
+        }
+
         function applyPrefill(item) {
-            // selects
+            // 1. Remplissage des Selects
             setSelectValue('typeDemandeId', item.typeDemandeId);
             setSelectValue('typeVisaId', item.typeVisaId);
             setSelectValue('nationaliteId', item.nationaliteId);
             setSelectValue('situationFamilialeId', item.situationFamilialeId);
 
-            // identifiant demandeur (pour réutiliser / mettre à jour sans recréer)
+            // 2. Déclencher l'affichage/masquage de la section pièces immédiatement après le changement du type
+            togglePiecesSection();
+
+            // 3. Identifiant demandeur
             setValue('demandeurId', item.demandeurId);
 
-            // état civil
+            // 4. État civil
             setValue('nom', item.nom);
             setValue('prenoms', item.prenoms);
             setValue('nomJeuneFille', item.nomJeuneFille);
@@ -297,33 +321,30 @@
             setValue('adresseMada', item.adresseMada);
             setValue('contactMada', item.contactMada);
 
-            // passeport
+            // 5. Passeport
             setValue('numeroPasseport', item.passeportNumero);
             setValue('dateDelivrance', item.passeportDelivrance);
             setValue('dateExpiration', item.passeportExpiration);
 
-            // visa transformable
+            // 6. Visa transformable
             setValue('visaTransformableNumero', item.visaTransformableNumero);
             setValue('visaTransformableDateEntree', item.vtDateEntree);
             setValue('visaTransformableLieuEntree', item.vtLieuEntree);
             setValue('visaTransformableDateFinVisa', item.vtDateFin);
 
-            // pièces fournies
-            if (Array.isArray(item.piecesFourniesIds)) {
-                const ids = item.piecesFourniesIds.map(x => String(x));
+            // 7. Gestion des Pièces Jointes (Cochage automatique)
+            if (item.piecesFourniesIds) {
+                // Conversion robuste : gère Array JS [1,2] ou String Postgres "{1,2}"
+                const ids = Array.isArray(item.piecesFourniesIds) 
+                            ? item.piecesFourniesIds.map(String)
+                            : String(item.piecesFourniesIds).replace(/{|}/g, '').split(',').map(s => s.trim());
+                
                 document.querySelectorAll('input[type="checkbox"][data-piece-id]').forEach(cb => {
                     cb.checked = ids.includes(cb.getAttribute('data-piece-id'));
                 });
             }
 
             showInfo(item);
-        }
-
-        function togglePiecesSection() {
-            if (!piecesSection || !typeDemandeSelect) return;
-            const selectedText = (typeDemandeSelect.options[typeDemandeSelect.selectedIndex]?.text || '').trim();
-            const isNouveauTitre = selectedText.toUpperCase() === 'NOUVEAU TITRE';
-            piecesSection.style.display = isNouveauTitre ? '' : 'none';
         }
 
         function renderList(items) {
@@ -338,7 +359,7 @@
                 const row = document.createElement('div');
                 row.className = 'autocomplete-item';
                 row.innerHTML = `<strong>${item.nom || ''} ${item.prenoms || ''}</strong>
-                    <span>Passeport : ${item.passeportNumero || '—'} &nbsp;|&nbsp; Dossier : ${item.demandeNumero || '—'} &nbsp;|&nbsp; ${item.nationalite || ''}</span>`;
+                    <span>Passeport : ${item.passeportNumero || '—'} &nbsp;|&nbsp; Dossier : ${item.demandeNumero || '—'}</span>`;
                 row.addEventListener('click', () => {
                     closeList();
                     input.value = `${item.nom || ''} ${item.prenoms || ''}`.trim();
@@ -357,6 +378,7 @@
                 .catch(() => closeList());
         }
 
+        // Ecouteurs d'événements
         input.addEventListener('input', function () {
             if (info) info.style.display = 'none';
             clearTimeout(debounceTimer);
@@ -372,8 +394,12 @@
             typeDemandeSelect.addEventListener('change', togglePiecesSection);
         }
 
-        togglePiecesSection();
+        // Initialisation au chargement (pour le mode modification ou état initial)
+        document.addEventListener('DOMContentLoaded', function() {
+            togglePiecesSection();
+        });
 
+        // Fermer la liste si clic ailleurs
         document.addEventListener('click', function (e) {
             if (!input.contains(e.target) && !list.contains(e.target)) {
                 closeList();

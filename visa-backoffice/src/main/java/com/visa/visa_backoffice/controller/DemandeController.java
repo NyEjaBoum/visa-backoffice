@@ -1,15 +1,10 @@
 package com.visa.visa_backoffice.controller;
 
-import com.visa.visa_backoffice.dto.DemandeAntecedentForm;
 import com.visa.visa_backoffice.dto.DemandeForm;
 import com.visa.visa_backoffice.model.Demande;
 import com.visa.visa_backoffice.model.DossierComplet;
 import com.visa.visa_backoffice.model.Passeport;
-import com.visa.visa_backoffice.service.DemandeService;
-import com.visa.visa_backoffice.service.NomenclatureService;
-import com.visa.visa_backoffice.service.PasseportService;
-import com.visa.visa_backoffice.service.PieceFournieService;
-import com.visa.visa_backoffice.service.PieceJustificativeService;
+import com.visa.visa_backoffice.service.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -44,8 +39,6 @@ public class DemandeController {
         this.pieceJustificativeService = pieceJustificativeService;
     }
 
-    // ─── Sprint 1 ─────────────────────────────────────────────────────────────
-
     @GetMapping
     public String liste(Model model) {
         model.addAttribute("demandes", demandeService.findAll());
@@ -56,6 +49,7 @@ public class DemandeController {
     public String nouveauForm(Model model) {
         model.addAttribute("form", new DemandeForm());
         chargerNomenclatures(model);
+        model.addAttribute("piecesJustificatives", pieceJustificativeService.findAll());
         return "demandes/formulaire";
     }
 
@@ -66,12 +60,12 @@ public class DemandeController {
         try {
             form.validateOrThrow();
             Demande demande = demandeService.creer(form);
-            redirectAttrs.addFlashAttribute("successMessage",
-                    "Demande créée avec succès. Numéro : " + demande.getNumDemande());
+            redirectAttrs.addFlashAttribute("successMessage", "Demande créée avec succès. Numéro : " + demande.getNumDemande());
             return "redirect:/demandes/" + demande.getId();
         } catch (ResponseStatusException e) {
             model.addAttribute("errorMessage", e.getReason());
             chargerNomenclatures(model);
+            model.addAttribute("piecesJustificatives", pieceJustificativeService.findAll());
             return "demandes/formulaire";
         }
     }
@@ -84,8 +78,9 @@ public class DemandeController {
             demande.getDemandeur() == null ? null : demande.getDemandeur().getId()
         ).orElse(null);
         model.addAttribute("passeport", passeport);
-        boolean modifiable = demande.getStatut() != null
-                && "CREE".equalsIgnoreCase(demande.getStatut().getLibelle());
+        model.addAttribute("piecesFournies", pieceFournieService.findAllForDemande(id));
+
+        boolean modifiable = demande.getStatut() != null && "CREE".equalsIgnoreCase(demande.getStatut().getLibelle());
         model.addAttribute("modifiable", modifiable);
         return "demandes/detail";
     }
@@ -101,14 +96,17 @@ public class DemandeController {
         Passeport passeport = passeportService.findLastForDemandeur(
             demande.getDemandeur() == null ? null : demande.getDemandeur().getId()
         ).orElse(null);
+        
         DemandeForm form = buildFormFromDemande(demande, passeport);
         form.setPiecesFourniesIds(pieceFournieService.findPresentPieceIds(id));
+        
         model.addAttribute("form", form);
         model.addAttribute("demandeId", id);
-        model.addAttribute("numDemande", demande.getNumDemande());
         chargerNomenclatures(model);
+        
         Integer typeVisaId = demande.getTypeVisa() != null ? demande.getTypeVisa().getId() : null;
         model.addAttribute("piecesJustificatives", pieceJustificativeService.findForTypeVisa(typeVisaId));
+        
         return "demandes/formulaire";
     }
 
@@ -126,19 +124,12 @@ public class DemandeController {
             model.addAttribute("errorMessage", e.getReason());
             model.addAttribute("demandeId", id);
             chargerNomenclatures(model);
+            model.addAttribute("piecesJustificatives", pieceJustificativeService.findForTypeVisa(form.getTypeVisaId()));
             return "demandes/formulaire";
         }
     }
 
-    // ─── Sprint 2 : Gestion des Antécédents ──────────────────────────────────
-
-    @GetMapping("/antecedents")
-    public String antecedentsForm(Model model) {
-        model.addAttribute("form", new DemandeAntecedentForm());
-        chargerNomenclaturesSprint2(model);
-        return "demandes/antecedents";
-    }
-
+    // --- Gardé pour l'autocomplete (Recherche) ---
     @GetMapping("/antecedents/autocomplete")
     @ResponseBody
     public ResponseEntity<List<Map<String, Object>>> autocomplete(
@@ -177,49 +168,9 @@ public class DemandeController {
         return ResponseEntity.ok(items);
     }
 
-    @PostMapping("/antecedents")
-    public String creerAntecedent(@ModelAttribute("form") DemandeAntecedentForm form,
-                                  RedirectAttributes redirectAttrs,
-                                  Model model) {
-        try {
-            if (form.getDemandeurId() != null) {
-                form.validateCasNormal();
-                Demande demande = demandeService.creerCasNormal(form);
-                redirectAttrs.addFlashAttribute("successMessage",
-                        "Demande créée avec succès. Numéro : " + demande.getNumDemande());
-                return "redirect:/demandes/" + demande.getId();
-            } else {
-                form.validateRattrapage();
-                List<Demande> demandes = demandeService.creerRattrapage(form);
-                redirectAttrs.addFlashAttribute("successMessage",
-                        "Dossier de rattrapage créé. Injection : " + demandes.get(0).getNumDemande()
-                        + " | Demande cible : " + demandes.get(1).getNumDemande());
-                return "redirect:/demandes/" + demandes.get(1).getId();
-            }
-        } catch (ResponseStatusException e) {
-            model.addAttribute("errorMessage", e.getReason());
-            chargerNomenclaturesSprint2(model);
-            return "demandes/antecedents";
-        }
-    }
-
-    // ─── Helpers ──────────────────────────────────────────────────────────────
-
     private void chargerNomenclatures(Model model) {
         model.addAttribute("typesVisa", nomenclatureService.getTypesVisa());
         model.addAttribute("typesDemande", nomenclatureService.getTypesDemande());
-        model.addAttribute("nationalites", nomenclatureService.getNationalites());
-        model.addAttribute("situationsFamiliales", nomenclatureService.getSituationsFamiliales());
-        model.addAttribute("piecesJustificatives", pieceJustificativeService.findAll());
-    }
-
-    private void chargerNomenclaturesSprint2(Model model) {
-        model.addAttribute("typesVisa", nomenclatureService.getTypesVisa());
-        model.addAttribute("typesDemandeAntecedent", nomenclatureService.getTypesDemande().stream()
-            .filter(td -> td.getLibelle() != null
-                && ("DUPLICATA".equalsIgnoreCase(td.getLibelle())
-                || "TRANSFERT".equalsIgnoreCase(td.getLibelle())))
-                .collect(Collectors.toList()));
         model.addAttribute("nationalites", nomenclatureService.getNationalites());
         model.addAttribute("situationsFamiliales", nomenclatureService.getSituationsFamiliales());
     }

@@ -19,19 +19,14 @@ INSERT INTO piece_justificative (libelle, id_type_visa, est_obligatoire) VALUES
 ('Certificat de résidence à Madagascar', NULL, TRUE),
 ('Extrait de casier judiciaire (moins de 3 mois)', NULL, TRUE);
 
--- Insertion des pièces spécifiques ETUDIANT
-INSERT INTO piece_justificative (libelle, id_type_visa, est_obligatoire) VALUES
-('Certificat de scolarité ou inscription', 1, TRUE),
-('Justificatif de ressources', 1, TRUE),
-('Attestation d''hébergement', 1, TRUE);
 
 -- Insertion des pièces spécifiques TRAVAILLEUR
 INSERT INTO piece_justificative (libelle, id_type_visa, est_obligatoire) VALUES
-('Autorisation d''emploi', 2, TRUE),
-('Attestation d''emploi', 2, TRUE);
+('Autorisation d''emploi', 1, TRUE),
+('Attestation d''emploi', 1, TRUE);
 
 -- Insertion des pièces spécifiques INVESTISSEUR
 INSERT INTO piece_justificative (libelle, id_type_visa, est_obligatoire) VALUES
-('Statuts de la Société', 3, TRUE),
-('Extrait d''inscription au Registre de Commerce', 3, TRUE),
-('Carte Fiscale', 3, TRUE);
+('Statuts de la Société', 2, TRUE),
+('Extrait d''inscription au Registre de Commerce', 2, TRUE),
+('Carte Fiscale', 2, TRUE);

@@ -28,6 +28,14 @@ public class PieceFournieService {
         return pieceFournieRepository.findPresentPieceIds(demandeId);
     }
 
+    @Transactional(readOnly = true)
+    public List<PieceFournie> findAllForDemande(Integer demandeId) {
+        if (demandeId == null) {
+            return List.of();
+        }
+        return pieceFournieRepository.findAllForDemande(demandeId);
+    }
+
     public void creerChecklist(Demande demande,
                                List<PieceJustificative> pieces,
                                List<Integer> checkedPieceIds) {
