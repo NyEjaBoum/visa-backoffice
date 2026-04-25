@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS historique_statut_demande (
 );
 
 --changeset sprint1:piece-type labels:sprint1 comment:Types de pieces justificatives
-CREATE TABLE IF NOT EXISTS piece_type (
+CREATE TABLE IF NOT EXISTS piece_justificative (
     id SERIAL PRIMARY KEY,
     libelle VARCHAR(255) NOT NULL,
     id_type_visa INTEGER REFERENCES type_visa(id) ON DELETE CASCADE,
@@ -17,15 +17,14 @@ CREATE TABLE IF NOT EXISTS piece_type (
 );
 
 --changeset sprint1:piece-justificative labels:sprint1 comment:Pieces justificatives fournies
-CREATE TABLE IF NOT EXISTS piece_justificative (
+CREATE TABLE IF NOT EXISTS piece_fournie (
     id SERIAL PRIMARY KEY,
     id_demande INTEGER REFERENCES demande(id),
-    id_piece_type INTEGER REFERENCES piece_type(id),
-    libelle_piece VARCHAR(255) NOT NULL,
+    id_piece_justificative INTEGER REFERENCES piece_justificative(id),
     is_present BOOLEAN DEFAULT FALSE,
-    chemin_fichier_scan TEXT,
     date_upload TIMESTAMP
 );
+
 
 --changeset sprint1:visa labels:sprint1 comment:Visa delivre (resultat)
 CREATE TABLE IF NOT EXISTS visa (

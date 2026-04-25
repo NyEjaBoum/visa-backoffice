@@ -9,7 +9,7 @@ DROP TABLE IF EXISTS dev.databasechangeloglock CASCADE;
 DROP TABLE IF EXISTS dev.piece_fournie CASCADE;
 DROP TABLE IF EXISTS dev.carte_resident CASCADE;
 DROP TABLE IF EXISTS dev.visa CASCADE;
-DROP TABLE IF EXISTS dev.piece_type CASCADE;
+DROP TABLE IF EXISTS dev.piece_justificative CASCADE;
 
 -- Tables "liées"
 DROP TABLE IF EXISTS dev.demande_visa CASCADE;

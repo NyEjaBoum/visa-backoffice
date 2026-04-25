@@ -289,6 +289,32 @@ body.app-body {
 }
 .form-input:hover, .form-select:hover { border-color: #94a3b8; }
 
+/* Autocomplete dropdown (shared) */
+.autocomplete-wrapper { position: relative; }
+.autocomplete-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: 0 10px 25px rgba(15,23,42,.10);
+}
+.autocomplete-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 14px;
+}
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:hover { background: #f8fafc; }
+.autocomplete-item strong { display: block; color: #0f172a; }
+.autocomplete-item span { color: #64748b; font-size: 12px; }
+
 /* Buttons */
 .btn { display: inline-flex; align-items: center; gap: 8px; border: none; padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all .2s; }
 .btn-primary-app {

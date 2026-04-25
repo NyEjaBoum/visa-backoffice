@@ -30,6 +30,21 @@
                   th:object="${form}"
                   method="post">
 
+                <!-- Pré-remplissage via recherche (nouvelle demande uniquement) -->
+                <div class="section" th:if="${demandeId == null}">
+                    <h2 class="section-title">Pré-remplissage (recherche)</h2>
+                    <p class="page-subtitle" style="margin-bottom:12px;">
+                        Saisir un nom, un numéro de passeport, un numéro de dossier ou un numéro de visa transformable.
+                    </p>
+                    <div class="autocomplete-wrapper" style="max-width:520px;">
+                        <input type="text" id="prefillSearchInput" class="form-input"
+                               placeholder="Ex : DUPONT, AB123456, MADA-2026-0001, VT-2026-0001"
+                               autocomplete="off">
+                        <div class="autocomplete-list" id="prefillAutocompleteList" style="display:none;"></div>
+                    </div>
+                    <div id="prefillInfo" class="alert alert-info" style="display:none;margin-top:12px;"></div>
+                </div>
+
                 <!-- Nature de la démarche -->
                 <div class="section">
                     <h2 class="section-title">Nature de la démarche</h2>
@@ -194,5 +209,122 @@
     </main>
 
 </div>
+
+<script>
+    (function () {
+        const input = document.getElementById('prefillSearchInput');
+        const list = document.getElementById('prefillAutocompleteList');
+        const info = document.getElementById('prefillInfo');
+
+        if (!input || !list) return;
+
+        let debounceTimer;
+        let lastItems = [];
+
+        function closeList() {
+            list.style.display = 'none';
+        }
+
+        function setValue(id, value) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.value = value || '';
+        }
+
+        function setSelectValue(id, value) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (value === null || value === undefined || value === '') return;
+            el.value = String(value);
+        }
+
+        function showInfo(item) {
+            if (!info) return;
+            const dossier = item.demandeNumero ? `Dossier : ${item.demandeNumero}` : 'Dossier : —';
+            const passeport = item.passeportNumero ? `Passeport : ${item.passeportNumero}` : 'Passeport : —';
+            const nationalite = item.nationalite ? `Nationalité : ${item.nationalite}` : 'Nationalité : —';
+            info.textContent = `Pré-remplissage effectué. ${dossier} | ${passeport} | ${nationalite}`;
+            info.style.display = 'flex';
+        }
+
+        function applyPrefill(item) {
+            // selects
+            setSelectValue('typeDemandeId', item.typeDemandeId);
+            setSelectValue('typeVisaId', item.typeVisaId);
+            setSelectValue('nationaliteId', item.nationaliteId);
+            setSelectValue('situationFamilialeId', item.situationFamilialeId);
+
+            // état civil
+            setValue('nom', item.nom);
+            setValue('prenoms', item.prenoms);
+            setValue('nomJeuneFille', item.nomJeuneFille);
+            setValue('dateNaissance', item.dateNaissance);
+            setValue('profession', item.profession);
+            setValue('adresseMada', item.adresseMada);
+            setValue('contactMada', item.contactMada);
+
+            // passeport
+            setValue('numeroPasseport', item.passeportNumero);
+            setValue('dateDelivrance', item.passeportDelivrance);
+            setValue('dateExpiration', item.passeportExpiration);
+
+            // visa transformable
+            setValue('visaTransformableNumero', item.visaTransformableNumero);
+            setValue('visaTransformableDateEntree', item.vtDateEntree);
+            setValue('visaTransformableLieuEntree', item.vtLieuEntree);
+            setValue('visaTransformableDateFinVisa', item.vtDateFin);
+
+            showInfo(item);
+        }
+
+        function renderList(items) {
+            lastItems = items || [];
+            list.innerHTML = '';
+            if (!items || items.length === 0) {
+                closeList();
+                return;
+            }
+
+            items.slice(0, 10).forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'autocomplete-item';
+                row.innerHTML = `<strong>${item.nom || ''} ${item.prenoms || ''}</strong>
+                    <span>Passeport : ${item.passeportNumero || '—'} &nbsp;|&nbsp; Dossier : ${item.demandeNumero || '—'} &nbsp;|&nbsp; ${item.nationalite || ''}</span>`;
+                row.addEventListener('click', () => {
+                    closeList();
+                    input.value = `${item.nom || ''} ${item.prenoms || ''}`.trim();
+                    applyPrefill(item);
+                });
+                list.appendChild(row);
+            });
+
+            list.style.display = 'block';
+        }
+
+        function fetchAutocomplete(q) {
+            fetch('/demandes/antecedents/autocomplete?q=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(items => renderList(items))
+                .catch(() => closeList());
+        }
+
+        input.addEventListener('input', function () {
+            if (info) info.style.display = 'none';
+            clearTimeout(debounceTimer);
+            const q = this.value.trim();
+            if (q.length < 2) {
+                closeList();
+                return;
+            }
+            debounceTimer = setTimeout(() => fetchAutocomplete(q), 300);
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!input.contains(e.target) && !list.contains(e.target)) {
+                closeList();
+            }
+        });
+    })();
+</script>
 </body>
 </html>

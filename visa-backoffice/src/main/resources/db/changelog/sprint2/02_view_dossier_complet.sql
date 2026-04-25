@@ -1,14 +1,18 @@
 --liquibase formatted sql
 
---changeset sprint2:view-dossier-complet labels:sprint2 comment:Vue consolidee demandeur/demande/passeport/visa_transformable pour autocomplete
-CREATE OR REPLACE VIEW v_dossier_complet AS
+--changeset sprint2:view-dossier-complet labels:sprint2 runOnChange:true comment:Vue consolidee demandeur/demande/passeport/visa_transformable pour autocomplete
+DROP VIEW IF EXISTS v_dossier_complet;
+
+CREATE VIEW v_dossier_complet AS
 SELECT DISTINCT ON (de.id)
     -- 1. INFOS DEMANDE
     d.id AS demande_id,
     d.numero AS demande_numero,
     d.date_creation AS demande_date_creation,
     s.libelle AS statut_actuel,
+    td.id AS type_demande_id,
     td.libelle AS type_demande_libelle,
+    tv.id AS type_visa_id,
     tv.libelle AS type_visa_libelle,
 
     -- 2. ÉTAT CIVIL DEMANDEUR
@@ -20,7 +24,9 @@ SELECT DISTINCT ON (de.id)
     de.profession,
     de.adresse_mada,
     de.contact_mada,
+    sf.id AS situation_familiale_id,
     sf.libelle AS situation_familiale,
+    n.id AS nationalite_id,
     n.libelle AS nationalite,
 
     -- 3. INFOS PASSEPORT (le plus recent)

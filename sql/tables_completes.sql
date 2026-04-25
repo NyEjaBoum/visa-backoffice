@@ -101,7 +101,7 @@ CREATE TABLE historique_statut_demande (
 -- 6. PIÈCES JUSTIFICATIVES
 -- ==========================================
 
-CREATE TABLE piece_type (
+CREATE TABLE piece_justificative (
     id SERIAL PRIMARY KEY,
     libelle VARCHAR(255) NOT NULL,
     id_type_visa INTEGER REFERENCES type_visa(id) ON DELETE CASCADE,
@@ -111,7 +111,7 @@ CREATE TABLE piece_type (
 CREATE TABLE piece_justificative (
     id SERIAL PRIMARY KEY,
     id_demande INTEGER REFERENCES demande(id),
-    id_piece_type INTEGER REFERENCES piece_type(id),
+    id_piece_justificative INTEGER REFERENCES piece_justificative(id),
     libelle_piece VARCHAR(255) NOT NULL,
     is_present BOOLEAN DEFAULT FALSE,
     chemin_fichier_scan TEXT,

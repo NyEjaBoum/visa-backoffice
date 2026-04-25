@@ -25,8 +25,14 @@ public class DossierComplet {
     @Column(name = "statut_actuel")
     private String statutActuel;
 
+    @Column(name = "type_demande_id")
+    private Integer typeDemandeId;
+
     @Column(name = "type_demande_libelle")
     private String typeDemandeLibelle;
+
+    @Column(name = "type_visa_id")
+    private Integer typeVisaId;
 
     @Column(name = "type_visa_libelle")
     private String typeVisaLibelle;
@@ -52,8 +58,14 @@ public class DossierComplet {
     @Column(name = "contact_mada")
     private String contactMada;
 
+    @Column(name = "situation_familiale_id")
+    private Integer situationFamilialeId;
+
     @Column(name = "situation_familiale")
     private String situationFamiliale;
+
+    @Column(name = "nationalite_id")
+    private Integer nationaliteId;
 
     private String nationalite;
 
