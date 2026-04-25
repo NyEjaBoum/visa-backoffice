@@ -28,6 +28,7 @@ public class DemandeService {
     private final DossierCompletRepository dossierCompletRepository;
     private final PieceFournieService pieceFournieService;
     private final PieceJustificativeService pieceJustificativeService;
+    private final VisaTransformableService visaTransformableService;
 
     public DemandeService(DemandeRepository demandeRepository,
                           DemandeurService demandeurService,
@@ -39,7 +40,8 @@ public class DemandeService {
                           SituationFamilialeService situationFamilialeService,
                           DossierCompletRepository dossierCompletRepository,
                           PieceFournieService pieceFournieService,
-                          PieceJustificativeService pieceJustificativeService) {
+                          PieceJustificativeService pieceJustificativeService,
+                          VisaTransformableService visaTransformableService) {
         this.demandeRepository = demandeRepository;
         this.demandeurService = demandeurService;
         this.passeportService = passeportService;
@@ -51,6 +53,7 @@ public class DemandeService {
         this.dossierCompletRepository = dossierCompletRepository;
         this.pieceFournieService = pieceFournieService;
         this.pieceJustificativeService = pieceJustificativeService;
+        this.visaTransformableService = visaTransformableService;
     }
 
     @Transactional(readOnly = true)
@@ -140,6 +143,16 @@ public class DemandeService {
             passeport.setDateDelivrance(form.getDateDelivrance());
             passeport.setDateExpiration(form.getDateExpiration());
             passeportService.update(passeport.getId(), passeport);
+        }
+
+        VisaTransformable vt = visaTransformableService.findLastForDemandeur(demandeur.getId()).orElse(null);
+        if (vt != null) {
+            vt.setNumero(form.getVisaTransformableNumero());
+            vt.setDateEntree(form.getVisaTransformableDateEntree());
+            vt.setLieuEntree(form.getVisaTransformableLieuEntree());
+            vt.setDateFinVisa(form.getVisaTransformableDateFinVisa());
+            visaTransformableService.update(vt.getId(), vt);
+
         }
 
         // 3. Update Demande
