@@ -30,6 +30,8 @@
                   th:object="${form}"
                   method="post">
 
+                <input type="hidden" id="demandeurId" th:field="*{demandeurId}">
+
                 <!-- Pré-remplissage via recherche (nouvelle demande uniquement) -->
                 <div class="section" th:if="${demandeId == null}">
                     <h2 class="section-title">Pré-remplissage (recherche)</h2>
@@ -196,6 +198,32 @@
                     </div>
                 </div>
 
+                <!-- Pièces justificatives (Sprint 1 : nouveau titre) -->
+                <div class="section" id="piecesSection" style="display:none;">
+                    <h2 class="section-title">4. Pièces justificatives fournies</h2>
+                    <p class="page-subtitle" style="margin-bottom:12px;">
+                        Cocher les pièces déjà fournies pour cette demande.
+                    </p>
+
+                    <div th:if="${#lists.isEmpty(piecesJustificatives)}" class="alert alert-info">
+                        Aucune pièce justificative configurée.
+                    </div>
+
+                    <div class="grid-2" th:if="${!#lists.isEmpty(piecesJustificatives)}">
+                        <div class="form-group" th:each="p : ${piecesJustificatives}">
+                            <label class="form-label" style="display:flex;align-items:center;gap:10px;font-weight:500;">
+                                <input type="checkbox"
+                                       th:field="*{piecesFourniesIds}"
+                                       th:value="${p.id}"
+                                       th:attr="data-piece-id=${p.id}"
+                                       style="width:16px;height:16px;">
+                                <span th:text="${p.libelle}">Pièce</span>
+                                <span th:if="${p.estObligatoire == true}" class="req" style="margin-left:auto;">*</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary-app"
                             th:text="${demandeId != null} ? 'Enregistrer les modifications' : 'Créer le dossier'">
@@ -215,6 +243,9 @@
         const input = document.getElementById('prefillSearchInput');
         const list = document.getElementById('prefillAutocompleteList');
         const info = document.getElementById('prefillInfo');
+
+        const typeDemandeSelect = document.getElementById('typeDemandeId');
+        const piecesSection = document.getElementById('piecesSection');
 
         if (!input || !list) return;
 
@@ -254,6 +285,9 @@
             setSelectValue('nationaliteId', item.nationaliteId);
             setSelectValue('situationFamilialeId', item.situationFamilialeId);
 
+            // identifiant demandeur (pour réutiliser / mettre à jour sans recréer)
+            setValue('demandeurId', item.demandeurId);
+
             // état civil
             setValue('nom', item.nom);
             setValue('prenoms', item.prenoms);
@@ -274,7 +308,22 @@
             setValue('visaTransformableLieuEntree', item.vtLieuEntree);
             setValue('visaTransformableDateFinVisa', item.vtDateFin);
 
+            // pièces fournies
+            if (Array.isArray(item.piecesFourniesIds)) {
+                const ids = item.piecesFourniesIds.map(x => String(x));
+                document.querySelectorAll('input[type="checkbox"][data-piece-id]').forEach(cb => {
+                    cb.checked = ids.includes(cb.getAttribute('data-piece-id'));
+                });
+            }
+
             showInfo(item);
+        }
+
+        function togglePiecesSection() {
+            if (!piecesSection || !typeDemandeSelect) return;
+            const selectedText = (typeDemandeSelect.options[typeDemandeSelect.selectedIndex]?.text || '').trim();
+            const isNouveauTitre = selectedText.toUpperCase() === 'NOUVEAU TITRE';
+            piecesSection.style.display = isNouveauTitre ? '' : 'none';
         }
 
         function renderList(items) {
@@ -318,6 +367,12 @@
             }
             debounceTimer = setTimeout(() => fetchAutocomplete(q), 300);
         });
+
+        if (typeDemandeSelect) {
+            typeDemandeSelect.addEventListener('change', togglePiecesSection);
+        }
+
+        togglePiecesSection();
 
         document.addEventListener('click', function (e) {
             if (!input.contains(e.target) && !list.contains(e.target)) {

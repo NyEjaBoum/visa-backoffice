@@ -28,6 +28,8 @@ public class DemandeService {
     private final SituationFamilialeService situationFamilialeService;
     private final VisaTransformableService visaTransformableService;
     private final DossierCompletRepository dossierCompletRepository;
+    private final PieceFournieService pieceFournieService;
+    private final PieceJustificativeService pieceJustificativeService;
 
     public DemandeService(DemandeRepository demandeRepository,
                           DemandeurService demandeurService,
@@ -38,7 +40,9 @@ public class DemandeService {
                           NationaliteService nationaliteService,
                           SituationFamilialeService situationFamilialeService,
                           VisaTransformableService visaTransformableService,
-                          DossierCompletRepository dossierCompletRepository) {
+                          DossierCompletRepository dossierCompletRepository,
+                          PieceFournieService pieceFournieService,
+                          PieceJustificativeService pieceJustificativeService) {
         this.demandeRepository = demandeRepository;
         this.demandeurService = demandeurService;
         this.passeportService = passeportService;
@@ -49,6 +53,8 @@ public class DemandeService {
         this.situationFamilialeService = situationFamilialeService;
         this.visaTransformableService = visaTransformableService;
         this.dossierCompletRepository = dossierCompletRepository;
+        this.pieceFournieService = pieceFournieService;
+        this.pieceJustificativeService = pieceJustificativeService;
     }
 
     public List<DossierComplet> rechercherAntecedents(String query) {
@@ -113,8 +119,15 @@ public class DemandeService {
         demande.setStatut(statutService.getStatutCree());
         demande.setDateCreation(LocalDateTime.now());
         demande.setVisaTransformable(visaTransformable);
+        demande = demandeRepository.save(demande);
 
-        return demandeRepository.save(demande);
+        // 5. Pièces justificatives
+        pieceFournieService.creerChecklist(
+                demande,
+                pieceJustificativeService.findForTypeVisa(form.getTypeVisaId()),
+                form.getPiecesFourniesIds());
+
+        return demande;
     }
 
     public Demande modifier(Integer id, DemandeForm form) {
@@ -181,8 +194,15 @@ public class DemandeService {
         // 4. Update Demande
         demande.setTypeVisa(typeVisaService.findById(form.getTypeVisaId()));
         demande.setTypeDemande(typeDemandeService.findById(form.getTypeDemandeId()));
+        demande = demandeRepository.save(demande);
 
-        return demandeRepository.save(demande);
+        // 5. Mise à jour pièces justificatives
+        pieceFournieService.updateChecklist(
+                demande,
+                pieceJustificativeService.findForTypeVisa(form.getTypeVisaId()),
+                form.getPiecesFourniesIds());
+
+        return demande;
     }
 
     // ─── Sprint 2 : Cas Normal (demandeur existant) ──────────────────────────

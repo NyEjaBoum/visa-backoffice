@@ -8,6 +8,8 @@ import com.visa.visa_backoffice.model.Passeport;
 import com.visa.visa_backoffice.service.DemandeService;
 import com.visa.visa_backoffice.service.NomenclatureService;
 import com.visa.visa_backoffice.service.PasseportService;
+import com.visa.visa_backoffice.service.PieceFournieService;
+import com.visa.visa_backoffice.service.PieceJustificativeService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -27,13 +29,19 @@ public class DemandeController {
     private final DemandeService demandeService;
     private final NomenclatureService nomenclatureService;
     private final PasseportService passeportService;
+    private final PieceFournieService pieceFournieService;
+    private final PieceJustificativeService pieceJustificativeService;
 
     public DemandeController(DemandeService demandeService,
                              NomenclatureService nomenclatureService,
-                             PasseportService passeportService) {
+                             PasseportService passeportService,
+                             PieceFournieService pieceFournieService,
+                             PieceJustificativeService pieceJustificativeService) {
         this.demandeService = demandeService;
         this.nomenclatureService = nomenclatureService;
         this.passeportService = passeportService;
+        this.pieceFournieService = pieceFournieService;
+        this.pieceJustificativeService = pieceJustificativeService;
     }
 
     // ─── Sprint 1 ─────────────────────────────────────────────────────────────
@@ -94,10 +102,13 @@ public class DemandeController {
             demande.getDemandeur() == null ? null : demande.getDemandeur().getId()
         ).orElse(null);
         DemandeForm form = buildFormFromDemande(demande, passeport);
+        form.setPiecesFourniesIds(pieceFournieService.findPresentPieceIds(id));
         model.addAttribute("form", form);
         model.addAttribute("demandeId", id);
         model.addAttribute("numDemande", demande.getNumDemande());
         chargerNomenclatures(model);
+        Integer typeVisaId = demande.getTypeVisa() != null ? demande.getTypeVisa().getId() : null;
+        model.addAttribute("piecesJustificatives", pieceJustificativeService.findForTypeVisa(typeVisaId));
         return "demandes/formulaire";
     }
 
@@ -160,6 +171,7 @@ public class DemandeController {
             item.put("vtDateEntree", d.getVtDateEntree() != null ? d.getVtDateEntree().toString() : "");
             item.put("vtLieuEntree", d.getVtLieuEntree() != null ? d.getVtLieuEntree() : "");
             item.put("vtDateFin", d.getVtDateFin() != null ? d.getVtDateFin().toString() : "");
+            item.put("piecesFourniesIds", pieceFournieService.findPresentPieceIds(d.getDemandeId()));
             return item;
         }).collect(Collectors.toList());
         return ResponseEntity.ok(items);
@@ -198,6 +210,7 @@ public class DemandeController {
         model.addAttribute("typesDemande", nomenclatureService.getTypesDemande());
         model.addAttribute("nationalites", nomenclatureService.getNationalites());
         model.addAttribute("situationsFamiliales", nomenclatureService.getSituationsFamiliales());
+        model.addAttribute("piecesJustificatives", pieceJustificativeService.findAll());
     }
 
     private void chargerNomenclaturesSprint2(Model model) {

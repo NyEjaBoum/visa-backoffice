@@ -5,12 +5,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public class DemandeForm {
 
     // Individu
 
     private Integer demandeurId;
+
+    private List<Integer> piecesFourniesIds;
 
     private String nom;
     
@@ -77,6 +80,12 @@ public class DemandeForm {
 
     public String getNom() { return nom; }
     public void setNom(String nom) { this.nom = nom; }
+
+    public Integer getDemandeurId() { return demandeurId; }
+    public void setDemandeurId(Integer demandeurId) { this.demandeurId = demandeurId; }
+
+    public List<Integer> getPiecesFourniesIds() { return piecesFourniesIds; }
+    public void setPiecesFourniesIds(List<Integer> piecesFourniesIds) { this.piecesFourniesIds = piecesFourniesIds; }
 
     public String getPrenoms() { return prenoms; }
     public void setPrenoms(String prenoms) { this.prenoms = prenoms; }
