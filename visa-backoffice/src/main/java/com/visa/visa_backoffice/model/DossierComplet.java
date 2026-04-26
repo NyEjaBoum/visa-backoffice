@@ -89,6 +89,10 @@ public class DossierComplet {
     @Column(name = "visa_transformable_numero")
     private String visaTransformableNumero;
 
+    @Column(name = "carte_resident_numero")
+    private String carteResidentNumero;
+
+
     @Column(name = "vt_date_entree")
     private LocalDate vtDateEntree;
 

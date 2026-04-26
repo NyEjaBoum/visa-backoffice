@@ -12,7 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import org.springframework.transaction.annotation.Transactional;
+
 @Service
 @Transactional
 public class DemandeService {
@@ -78,60 +78,40 @@ public class DemandeService {
 
     @Transactional
     public Demande creer(DemandeForm form) {
-        // 1. Demandeur
-        Demandeur demandeur = (form.getDemandeurId() != null) 
-        ? demandeurService.findByIdOrThrow(form.getDemandeurId())
-        : new Demandeur();
+        form.validateOrThrow();
 
-        demandeur.setNom(form.getNom());
-        demandeur.setPrenoms(form.getPrenoms());
-        demandeur.setNomJeuneFille(form.getNomJeuneFille());
-        demandeur.setDateNaissance(form.getDateNaissance());
-        demandeur.setProfession(form.getProfession());
-        demandeur.setAdresseMada(form.getAdresseMada());
-        demandeur.setContactMada(form.getContactMada());
-        if (form.getNationaliteId() != null)
-            demandeur.setNationalite(nationaliteService.findById(form.getNationaliteId()));
-        if (form.getSituationFamilialeId() != null)
-            demandeur.setSituationFamiliale(situationFamilialeService.findById(form.getSituationFamilialeId()));
-        demandeur = demandeurService.create(demandeur);
+        // 1. Demandeur
+        Demandeur demandeur = (form.getDemandeurId() != null)
+                ? demandeurService.findByIdOrThrow(form.getDemandeurId())
+                : new Demandeur();
+        demandeur.updateFromForm(form,
+                form.getNationaliteId() != null ? nationaliteService.findById(form.getNationaliteId()) : null,
+                form.getSituationFamilialeId() != null ? situationFamilialeService.findById(form.getSituationFamilialeId()) : null);
+        demandeur = (demandeur.getId() == null)
+                ? demandeurService.create(demandeur)
+                : demandeurService.save(demandeur);
 
         // 2. Passeport
         Passeport passeport = passeportService.findByNumero(form.getNumeroPasseport())
-                          .orElse(new Passeport());
-        
-        passeport.setNumero(form.getNumeroPasseport());
-        passeport.setDateDelivrance(form.getDateDelivrance());
-        passeport.setDateExpiration(form.getDateExpiration());
-        passeport.setDemandeur(demandeur);
+                .orElse(new Passeport());
+        passeport.updateFromForm(form, demandeur);
         passeport = passeportService.create(passeport);
 
-        String vtNum = form.getVisaTransformableNumero();
+        // 3. VisaTransformable (optionnel)
         VisaTransformable visaTransformable = null;
-
+        String vtNum = form.getVisaTransformableNumero();
         if (vtNum != null && !vtNum.isBlank()) {
-            // On récupère l'existant (avec son ID) ou on crée une instance vide
             visaTransformable = visaTransformableService.findByNumero(vtNum)
-                                .orElse(new VisaTransformable());
-            
-            // 2. On met à jour les champs (qu'il soit nouveau ou ancien)
-            visaTransformable.setNumero(vtNum);
-            visaTransformable.setPasseport(passeport);
-            visaTransformable.setDemandeur(demandeur);
-            visaTransformable.setDateEntree(form.getVisaTransformableDateEntree());
-            visaTransformable.setLieuEntree(form.getVisaTransformableLieuEntree());
-            visaTransformable.setDateFinVisa(form.getVisaTransformableDateFinVisa());
-            
-            // 3. On sauvegarde
-            // Si l'objet avait un ID (trouvé par findByNumero), Hibernate fera un UPDATE.
-            // Sinon, il fera un INSERT.
+                    .orElse(new VisaTransformable());
+            visaTransformable.updateFromForm(form, passeport, demandeur);
             visaTransformable = visaTransformableService.save(visaTransformable);
         }
 
-        // 3. Demande
+        // 4. Demande
         Demande demande = new Demande();
         demande.setNumDemande(genererNumeroDossier());
         demande.setDemandeur(demandeur);
+        demande.setPasseport(passeport);
         demande.setTypeVisa(typeVisaService.findById(form.getTypeVisaId()));
         demande.setTypeDemande(typeDemandeService.findById(form.getTypeDemandeId()));
         demande.setStatut(statutService.getStatutCree());
@@ -139,11 +119,8 @@ public class DemandeService {
         demande.setVisaTransformable(visaTransformable);
         demande = demandeRepository.save(demande);
 
-        
+        historiqueDemandeStatutService.creer(demande, demande.getStatut());
 
-        HistoriqueStatutDemande historique = historiqueDemandeStatutService.creer(demande, demande.getStatut());
-
-        // 4. Pièces justificatives
         pieceFournieService.creerChecklist(
                 demande,
                 pieceJustificativeService.findForTypeVisa(form.getTypeVisaId()),
@@ -154,74 +131,46 @@ public class DemandeService {
 
     @Transactional
     public Demande modifier(Integer id, DemandeForm form) {
-        // 1. Récupérer la demande existante avec ses relations
+        form.validateOrThrow();
+
+        // 1. Récupérer la demande existante
         Demande demande = findByIdOrThrow(id);
 
-        // 2. Vérification du verrouillage (Sécurité métier)
+        // 2. Vérification du verrouillage
         if (demande.getStatut() == null || !"CREE".equalsIgnoreCase(demande.getStatut().getLibelle())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification impossible : dossier déjà verrouillé (Statut: " + 
-                (demande.getStatut() != null ? demande.getStatut().getLibelle() : "INCONNU") + ")");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification impossible : dossier déjà verrouillé (Statut: " +
+                    (demande.getStatut() != null ? demande.getStatut().getLibelle() : "INCONNU") + ")");
         }
 
-        // 3. Mise à jour du Demandeur (L'individu reste le même)
+        // 3. Mise à jour du Demandeur
         Demandeur demandeur = demande.getDemandeur();
-        demandeur.setNom(form.getNom());
-        demandeur.setPrenoms(form.getPrenoms());
-        demandeur.setNomJeuneFille(form.getNomJeuneFille());
-        demandeur.setDateNaissance(form.getDateNaissance());
-        demandeur.setProfession(form.getProfession());
-        demandeur.setAdresseMada(form.getAdresseMada());
-        demandeur.setContactMada(form.getContactMada());
-        
-        if (form.getNationaliteId() != null) {
-            demandeur.setNationalite(nationaliteService.findById(form.getNationaliteId()));
-        }
-        if (form.getSituationFamilialeId() != null) {
-            demandeur.setSituationFamiliale(situationFamilialeService.findById(form.getSituationFamilialeId()));
-        }
-        demandeurService.update(demandeur.getId(), demandeur);
+        demandeur.updateFromForm(form,
+                form.getNationaliteId() != null ? nationaliteService.findById(form.getNationaliteId()) : null,
+                form.getSituationFamilialeId() != null ? situationFamilialeService.findById(form.getSituationFamilialeId()) : null);
+        demandeur = demandeurService.save(demandeur);
 
-        // 4. Mise à jour du Passeport lié à cette demande
-        Passeport passeport = demande.getPasseport();
-        if (passeport != null) {
-            passeport.setNumero(form.getNumeroPasseport());
-            passeport.setDateDelivrance(form.getDateDelivrance());
-            passeport.setDateExpiration(form.getDateExpiration());
-            // On s'assure que le lien demandeur est maintenu
-            passeport.setDemandeur(demandeur);
-            passeportService.update(passeport.getId(), passeport);
-        }
+        // 4. Mise à jour du Passeport
+        Passeport passeport = demande.getPasseport() != null
+                ? demande.getPasseport()
+                : passeportService.findByNumero(form.getNumeroPasseport()).orElse(new Passeport());
+        passeport.updateFromForm(form, demandeur);
+        passeport = passeportService.create(passeport);
+        demande.setPasseport(passeport);
 
-        // 5. Mise à jour ou Création du Visa Transformable
+        // 5. Mise à jour ou Création du Visa Transformable (optionnel)
         String vtNum = form.getVisaTransformableNumero();
         if (vtNum != null && !vtNum.isBlank()) {
-            // On regarde si la demande en a déjà un
-            VisaTransformable vt = demande.getVisaTransformable();
-            
-            if (vt == null) {
-                // Si la demande n'en avait pas, on vérifie si ce numéro existe déjà en base
-                // pour ne pas créer un doublon qui ferait planter la contrainte UNIQUE
-                vt = visaTransformableService.findByNumero(vtNum).orElse(new VisaTransformable());
-            }
-
-            // On met à jour les données (que ce soit un existant ou un nouveau)
-            vt.setNumero(vtNum);
-            vt.setPasseport(passeport);
-            vt.setDemandeur(demandeur);
-            vt.setDateEntree(form.getVisaTransformableDateEntree());
-            vt.setLieuEntree(form.getVisaTransformableLieuEntree());
-            vt.setDateFinVisa(form.getVisaTransformableDateFinVisa());
-            
-            // save() fera un UPDATE si l'ID est présent, sinon un INSERT
+            VisaTransformable vt = (demande.getVisaTransformable() != null)
+                    ? demande.getVisaTransformable()
+                    : visaTransformableService.findByNumero(vtNum).orElse(new VisaTransformable());
+            vt.updateFromForm(form, passeport, demandeur);
             vt = visaTransformableService.save(vt);
             demande.setVisaTransformable(vt);
         }
 
-        // 6. Mise à jour des infos de la Demande elle-même
+        // 6. Mise à jour de la Demande
         demande.setTypeVisa(typeVisaService.findById(form.getTypeVisaId()));
         demande.setTypeDemande(typeDemandeService.findById(form.getTypeDemandeId()));
-        
-        // On sauvegarde la demande pour enregistrer le lien vers le visa transformable
         demande = demandeRepository.save(demande);
 
         // 7. Mise à jour de la checklist des pièces

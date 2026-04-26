@@ -1,5 +1,6 @@
 package com.visa.visa_backoffice.model;
 
+import com.visa.visa_backoffice.dto.DemandeForm;
 import jakarta.persistence.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -59,4 +60,13 @@ public class VisaTransformable {
 
     public LocalDate getDateFinVisa() { return dateFinVisa; }
     public void setDateFinVisa(LocalDate dateFinVisa) { this.dateFinVisa = dateFinVisa; }
+
+    public void updateFromForm(DemandeForm form, Passeport passeport, Demandeur demandeur) {
+        setNumero(form.getVisaTransformableNumero());
+        setPasseport(passeport);
+        setDemandeur(demandeur);
+        setDateEntree(form.getVisaTransformableDateEntree());
+        setLieuEntree(form.getVisaTransformableLieuEntree());
+        setDateFinVisa(form.getVisaTransformableDateFinVisa());
+    }
 }

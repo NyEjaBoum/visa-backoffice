@@ -37,6 +37,11 @@ public class DemandeurService {
         return demandeurRepository.save(demandeur);
     }
 
+    public Demandeur save(Demandeur demandeur) {
+        demandeur.setUpdatedDate(LocalDateTime.now());
+        return demandeurRepository.save(demandeur);
+    }
+
     public Demandeur update(Integer id, Demandeur payload) {
         Demandeur existing = findByIdOrThrow(id);
         existing.setNom(payload.getNom());
