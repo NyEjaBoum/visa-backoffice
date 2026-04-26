@@ -41,7 +41,8 @@
             <form id="demandeForm"
                   th:action="${demandeId != null} ? @{/demandes/{id}/modifier(id=${demandeId})} : @{/demandes}"
                   th:object="${form}"
-                  method="post">
+                  method="post"
+                  enctype="multipart/form-data">
 
                 <input type="hidden" id="demandeurId" th:field="*{demandeurId}">
 
@@ -293,6 +294,14 @@
                                 <span th:text="${p.libelle}">Pièce</span>
                                 <span th:if="${p.estObligatoire == true}" class="req" style="margin-left:auto;">*</span>
                             </label>
+                            <!-- Scan immédiat à la création -->
+                            <div th:if="${demandeId == null}"
+                                 style="margin-top:4px;padding-left:26px;">
+                                <input type="file"
+                                       th:name="'fichier_' + ${p.id}"
+                                       accept=".pdf,.jpg,.jpeg,.png,.tiff"
+                                       style="font-size:0.81rem;max-width:100%;">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -306,6 +315,72 @@
                        class="btn btn-ghost">Annuler</a>
                 </div>
             </form>
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 UPLOAD DES FICHIERS (modification uniquement — pieceFournie IDs existent)
+            ════════════════════════════════════════════════════════════════ -->
+            <div th:if="${demandeId != null and piecesFournies != null and !#lists.isEmpty(piecesFournies)}"
+                 class="section" style="margin-top:8px;">
+                <h2 class="section-title">Scan des pièces justificatives</h2>
+                <p class="page-subtitle" style="margin-bottom:16px;">
+                    Ajoutez ou supprimez les fichiers pour chaque pièce cochée.
+                    La finalisation du scan se fait depuis la page de détail.
+                </p>
+
+                <div th:each="pf : ${piecesFournies}">
+                    <div th:if="${pf.isPresent == true}"
+                         style="border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin-bottom:10px;
+                                background:#f9fafb;">
+
+                        <div style="font-weight:600;font-size:0.92rem;margin-bottom:8px;"
+                             th:text="${pf.pieceJustificative.libelle}">Pièce</div>
+
+                        <!-- Fichiers existants -->
+                        <div th:each="fichier : ${fichiersByPiece[pf.id]}"
+                             style="display:flex;align-items:center;gap:10px;padding:5px 8px;
+                                    background:#fff;border:1px solid #e5e7eb;border-radius:6px;margin-bottom:5px;">
+                            <a th:href="@{/demandes/fichiers/{fid}/telecharger(fid=${fichier.id})}"
+                               target="_blank" style="flex:1;color:#1d4ed8;text-decoration:none;font-size:0.85rem;"
+                               th:text="${fichier.nomOriginal ?: fichier.filePath}">fichier.pdf</a>
+                            <form th:action="@{/demandes/{id}/fichiers/{fid}/supprimer(id=${demandeId},fid=${fichier.id})}"
+                                  method="post" style="margin:0;">
+                                <button type="submit"
+                                        style="background:#dc2626;color:#fff;border:none;padding:3px 10px;
+                                               border-radius:5px;cursor:pointer;font-size:0.78rem;"
+                                        onclick="return confirm('Supprimer ce fichier ?')">✕</button>
+                            </form>
+                        </div>
+
+                        <!-- Formulaire d'ajout — auto-submit dès sélection -->
+                        <form th:action="@{/demandes/{id}/pieces/{pfId}/upload(id=${demandeId},pfId=${pf.id})}"
+                              method="post" enctype="multipart/form-data"
+                              style="margin-top:6px;">
+                            <label th:for="'fmod-' + ${pf.id}"
+                                   style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;
+                                          background:#fff;border:1.5px dashed #9ca3af;border-radius:6px;
+                                          cursor:pointer;font-size:0.82rem;color:#374151;font-weight:500;
+                                          transition:background .15s,border-color .15s;"
+                                   onmouseover="this.style.background='#f3f4f6';this.style.borderColor='#6b7280'"
+                                   onmouseout="this.style.background='#fff';this.style.borderColor='#9ca3af'">
+                                📎 Ajouter un scan
+                            </label>
+                            <input type="file"
+                                   th:id="'fmod-' + ${pf.id}"
+                                   name="file"
+                                   accept=".pdf,.jpg,.jpeg,.png,.tiff"
+                                   style="display:none;"
+                                   onchange="var lbl=this.previousElementSibling; lbl.textContent='⏳ Envoi…'; lbl.style.opacity='0.6'; this.form.submit();">
+                        </form>
+                    </div>
+
+                    <!-- Pièce non cochée : juste un indicateur -->
+                    <div th:if="${pf.isPresent == false}"
+                         style="padding:8px 14px;border-radius:6px;background:#f3f4f6;
+                                color:#9ca3af;font-size:0.85rem;margin-bottom:6px;"
+                         th:text="'✘ ' + ${pf.pieceJustificative.libelle} + ' — non fournie'">
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 

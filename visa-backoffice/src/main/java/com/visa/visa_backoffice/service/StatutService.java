@@ -41,6 +41,10 @@ public class StatutService {
         return findByLibelle("VISA APPROUVE");
     }
 
+    public Statut getStatutScanTermine() {
+        return findByLibelle("SCAN TERMINÉ");
+    }
+
     @Transactional
     public Statut create(Statut statut) {
         if (statut.getLibelle() != null) {

@@ -10,13 +10,9 @@ import java.util.List;
 public class DemandeForm {
 
     // Individu
-
     private Integer demandeurId;
-
     private List<Integer> piecesFourniesIds;
-
     private String nom;
-    
     private String prenoms;
     private String nomJeuneFille;
 
@@ -26,9 +22,7 @@ public class DemandeForm {
     private Integer situationFamilialeId;
     private Integer nationaliteId;
     private String profession;
-    
     private String adresseMada;
-    
     private String contactMada;
 
     // Passeport
@@ -42,11 +36,18 @@ public class DemandeForm {
 
     // Demande
     private Integer typeVisaId;
-    
     private Integer typeDemandeId;
 
     // Visa transformable (optionnel)
     private String visaTransformableNumero;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate visaTransformableDateEntree;
+
+    private String visaTransformableLieuEntree;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate visaTransformableDateFinVisa;
 
     // Rattrapage — passé injecté (null en cas normal)
     private String numeroCarteResident;
@@ -64,14 +65,6 @@ public class DemandeForm {
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate dateFinVisa;
-
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    private LocalDate visaTransformableDateEntree;
-
-    private String visaTransformableLieuEntree;
-
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    private LocalDate visaTransformableDateFinVisa;
 
     public void validateOrThrow() {
         requireNotBlank(nom, "Le nom est obligatoire");

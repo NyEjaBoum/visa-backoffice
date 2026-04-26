@@ -5,6 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="'Dossier ' + ${demande.numDemande} + ' — Visa Backoffice'">Dossier</title>
     <link rel="stylesheet" th:href="@{/style.css}">
+    <style>
+        .scan-zone { border:2px solid #e5e7eb; border-radius:8px; padding:16px; margin-bottom:12px; }
+        .scan-zone.has-files { border-color:#16a34a; background:#f0fdf4; }
+        .scan-zone.no-files { border-color:#f59e0b; background:#fffbeb; }
+        .fichier-item { display:flex; align-items:center; gap:10px; padding:6px 10px;
+                        background:#fff; border:1px solid #e5e7eb; border-radius:6px; margin-bottom:6px; }
+        .fichier-item a { flex:1; color:#1d4ed8; text-decoration:none; font-size:0.88rem; }
+        .fichier-item a:hover { text-decoration:underline; }
+        .btn-upload-label {
+            display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
+            padding: 6px 14px; background: #fff; border: 1.5px dashed #9ca3af;
+            border-radius: 6px; cursor: pointer; font-size: 0.83rem;
+            color: #374151; font-weight: 500; transition: background 0.15s, border-color 0.15s;
+        }
+        .btn-upload-label:hover { background: #f3f4f6; border-color: #6b7280; }
+        .btn-upload-label.uploading { opacity: 0.6; cursor: wait; }
+        .badge-scan { background:#d1fae5; color:#065f46; padding:3px 10px; border-radius:12px;
+                      font-size:0.78rem; font-weight:700; }
+        .badge-cree  { background:#dbeafe; color:#1e40af; }
+        .badge-annule { background:#fee2e2; color:#991b1b; }
+        .badge-valide { background:#dcfce7; color:#166534; }
+        .piece-label { font-weight:600; font-size:0.92rem; margin-bottom:4px; }
+        .piece-absent { color:#9ca3af; font-style:italic; font-size:0.85rem; }
+        .alert-success { background:#d1fae5; color:#065f46; border:1px solid #a7f3d0;
+                         padding:12px 16px; border-radius:8px; margin-bottom:16px; }
+        .alert-error   { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;
+                         padding:12px 16px; border-radius:8px; margin-bottom:16px; }
+        .btn-danger { background:#dc2626; color:#fff; border:none; padding:5px 12px;
+                      border-radius:6px; cursor:pointer; font-size:0.8rem; }
+        .btn-danger:hover { background:#b91c1c; }
+        .btn-scan { background:#7c3aed; color:#fff; border:none; padding:10px 20px;
+                    border-radius:8px; cursor:pointer; font-weight:600; font-size:0.95rem; }
+        .btn-scan:hover { background:#6d28d9; }
+        .btn-pdf  { background:#0369a1; color:#fff; padding:10px 20px; border-radius:8px;
+                    font-weight:600; font-size:0.95rem; text-decoration:none; display:inline-block; }
+        .btn-pdf:hover { background:#0284c7; }
+        .locked-banner { background:#fef3c7; border:2px solid #f59e0b; border-radius:8px;
+                         padding:12px 16px; margin-bottom:16px; color:#92400e; font-weight:600; }
+    </style>
 </head>
 <body class="app-body">
 <div class="app-layout">
@@ -20,15 +59,23 @@
                     <div class="detail-num" th:text="${demande.numDemande}">MADA-2026-0001</div>
                     <div class="detail-date"
                          th:text="'Créé le ' + ${#temporals.format(demande.dateCreation, 'dd/MM/yyyy à HH:mm')}">
-                        Créé le 01/01/2026
                     </div>
                 </div>
                 <span class="badge"
-                      th:classappend="${demande.statut?.libelle == 'CREE'} ? ' badge-cree' : (${demande.statut?.libelle == 'VALIDE'} ? ' badge-valide' : ' badge-annule')"
+                      th:classappend="${demande.statut?.libelle == 'CREE'} ? ' badge-cree'
+                                    : (${demande.statut?.libelle == 'SCAN TERMINÉ'} ? ' badge-scan'
+                                    : (${demande.statut?.libelle == 'VALIDE'} ? ' badge-valide' : ' badge-annule'))"
                       th:text="${demande.statut?.libelle}">CREE</span>
             </div>
 
+            <!-- Alertes flash -->
             <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+            <div th:if="${errorMessage}"   class="alert alert-error"   th:text="${errorMessage}"></div>
+
+            <!-- Bannière dossier verrouillé -->
+            <div th:if="${scanTermine}" class="locked-banner">
+                🔒 Ce dossier est finalisé (SCAN TERMINÉ) — lecture seule. Téléchargez le récépissé ci-dessous.
+            </div>
 
             <!-- Nature de la démarche -->
             <div class="section">
@@ -36,11 +83,11 @@
                 <div class="grid-2">
                     <div class="field-block">
                         <span class="field-label">Type de demande</span>
-                        <span class="field-value" th:text="${demande.typeDemande?.libelle ?: '—'}">NOUVEAU TITRE</span>
+                        <span class="field-value" th:text="${demande.typeDemande?.libelle ?: '—'}"></span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Catégorie visa</span>
-                        <span class="field-value" th:text="${demande.typeVisa?.libelle ?: '—'}">TRAVAILLEUR</span>
+                        <span class="field-value" th:text="${demande.typeVisa?.libelle ?: '—'}"></span>
                     </div>
                 </div>
             </div>
@@ -51,40 +98,40 @@
                 <div class="grid-2">
                     <div class="field-block">
                         <span class="field-label">Nom</span>
-                        <span class="field-value" th:text="${demande.demandeur.nom ?: '—'}">NOM</span>
+                        <span class="field-value" th:text="${demande.demandeur.nom ?: '—'}"></span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Prénoms</span>
-                        <span class="field-value" th:text="${demande.demandeur.prenoms ?: '—'}">—</span>
+                        <span class="field-value" th:text="${demande.demandeur.prenoms ?: '—'}"></span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Nom de jeune fille</span>
-                        <span class="field-value" th:text="${demande.demandeur.nomJeuneFille ?: '—'}">—</span>
+                        <span class="field-value" th:text="${demande.demandeur.nomJeuneFille ?: '—'}"></span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Date de naissance</span>
                         <span class="field-value"
-                              th:text="${demande.demandeur.dateNaissance != null ? #temporals.format(demande.demandeur.dateNaissance,'dd/MM/yyyy') : '—'}">—</span>
+                              th:text="${demande.demandeur.dateNaissance != null ? #temporals.format(demande.demandeur.dateNaissance,'dd/MM/yyyy') : '—'}"></span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Situation familiale</span>
-                        <span class="field-value" th:text="${demande.demandeur.situationFamiliale?.libelle ?: '—'}">—</span>
+                        <span class="field-value" th:text="${demande.demandeur.situationFamiliale?.libelle ?: '—'}"></span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Nationalité</span>
-                        <span class="field-value" th:text="${demande.demandeur.nationalite?.libelle ?: '—'}">—</span>
+                        <span class="field-value" th:text="${demande.demandeur.nationalite?.libelle ?: '—'}"></span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Profession</span>
-                        <span class="field-value" th:text="${demande.demandeur.profession ?: '—'}">—</span>
+                        <span class="field-value" th:text="${demande.demandeur.profession ?: '—'}"></span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Adresse à Madagascar</span>
-                        <span class="field-value" th:text="${demande.demandeur.adresseMada ?: '—'}">—</span>
+                        <span class="field-value" th:text="${demande.demandeur.adresseMada ?: '—'}"></span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Contact</span>
-                        <span class="field-value" th:text="${demande.demandeur.contactMada ?: '—'}">—</span>
+                        <span class="field-value" th:text="${demande.demandeur.contactMada ?: '—'}"></span>
                     </div>
                 </div>
             </div>
@@ -95,66 +142,155 @@
                 <div class="grid-2">
                     <div class="field-block">
                         <span class="field-label">Numéro</span>
-                        <span class="field-value" th:text="${passeport.numero ?: '—'}">—</span>
+                        <span class="field-value" th:text="${passeport.numero ?: '—'}"></span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Date de délivrance</span>
                         <span class="field-value"
-                              th:text="${passeport.dateDelivrance != null ? #temporals.format(passeport.dateDelivrance,'dd/MM/yyyy') : '—'}">—</span>
+                              th:text="${passeport.dateDelivrance != null ? #temporals.format(passeport.dateDelivrance,'dd/MM/yyyy') : '—'}"></span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Date d'expiration</span>
                         <span class="field-value"
-                              th:text="${passeport.dateExpiration != null ? #temporals.format(passeport.dateExpiration,'dd/MM/yyyy') : '—'}">—</span>
+                              th:text="${passeport.dateExpiration != null ? #temporals.format(passeport.dateExpiration,'dd/MM/yyyy') : '—'}"></span>
                     </div>
                 </div>
             </div>
 
+            <!-- Visa Transformable -->
             <div class="section" th:if="${demande.visaTransformable != null}">
                 <h2 class="section-title">3. Visa Transformable</h2>
                 <div class="grid-2">
                     <div class="field-block">
                         <span class="field-label">Référence</span>
-                        <span class="field-value" th:text="${demande.visaTransformable.numero ?: '—'}">—</span>
+                        <span class="field-value" th:text="${demande.visaTransformable.numero ?: '—'}"></span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Date d'entrée</span>
                         <span class="field-value"
-                              th:text="${demande.visaTransformable.dateEntree != null ? #temporals.format(demande.visaTransformable.dateEntree,'dd/MM/yyyy') : '—'}">—</span>
+                              th:text="${demande.visaTransformable.dateEntree != null ? #temporals.format(demande.visaTransformable.dateEntree,'dd/MM/yyyy') : '—'}"></span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Lieu d'entrée</span>
-                        <span class="field-value" th:text="${demande.visaTransformable.lieuEntree ?: '—'}">—</span>
+                        <span class="field-value" th:text="${demande.visaTransformable.lieuEntree ?: '—'}"></span>
                     </div>
                     <div class="field-block">
                         <span class="field-label">Date de fin de visa</span>
                         <span class="field-value"
-                              th:text="${demande.visaTransformable.dateFinVisa != null ? #temporals.format(demande.visaTransformable.dateFinVisa,'dd/MM/yyyy') : '—'}">—</span>
+                              th:text="${demande.visaTransformable.dateFinVisa != null ? #temporals.format(demande.visaTransformable.dateFinVisa,'dd/MM/yyyy') : '—'}"></span>
                     </div>
                 </div>
             </div>
 
-            <!-- Pièces justificatives fournies -->
+            <!-- ═══════════════════════════════════════════════════════════════
+                 4. PIÈCES JUSTIFICATIVES + SCAN
+            ════════════════════════════════════════════════════════════════ -->
             <div class="section" th:if="${!#lists.isEmpty(piecesFournies)}">
-                <h2 class="section-title">4. Pièces justificatives fournies</h2>
-                <div class="grid-2">
-                    <div class="field-block" th:each="pf : ${piecesFournies}">
-                        <span class="field-label" th:text="${pf.pieceJustificative.libelle}">Pièce</span>
-                        <span class="field-value"
-                              th:text="${pf.isPresent == true} ? '✔ Fournie' : '✘ Non fournie'"
-                              th:style="${pf.isPresent == true} ? 'color:#16a34a;font-weight:600' : 'color:#dc2626;'">
-                        </span>
+                <h2 class="section-title">4. Pièces justificatives &amp; scan</h2>
+                <p class="page-subtitle" style="margin-bottom:16px;"
+                   th:if="${modifiable}">
+                    Pour chaque pièce cochée, ajoutez le fichier scanné correspondant, puis cliquez sur
+                    <strong>Finaliser le scan</strong>.
+                </p>
+
+                <div th:each="pf : ${piecesFournies}">
+
+                    <!-- Pièce NON cochée → affichage simple -->
+                    <div th:if="${pf.isPresent == false}" class="scan-zone" style="opacity:0.55;">
+                        <div class="piece-label" th:text="${pf.pieceJustificative.libelle}">Pièce</div>
+                        <span class="piece-absent">✘ Non fournie</span>
+                    </div>
+
+                    <!-- Pièce COCHÉE → zone de scan -->
+                    <div th:if="${pf.isPresent == true}"
+                         th:class="${!#lists.isEmpty(fichiersByPiece[pf.id])} ? 'scan-zone has-files' : 'scan-zone no-files'">
+
+                        <div class="piece-label">
+                            <span th:text="${pf.pieceJustificative.libelle}">Pièce</span>
+                            <span style="color:#16a34a;margin-left:6px;"
+                                  th:if="${!#lists.isEmpty(fichiersByPiece[pf.id])}">✔</span>
+                            <span style="color:#d97706;margin-left:6px;"
+                                  th:if="${#lists.isEmpty(fichiersByPiece[pf.id])}">⚠ Aucun fichier</span>
+                        </div>
+
+                        <!-- Liste des fichiers déjà uploadés -->
+                        <div th:each="fichier : ${fichiersByPiece[pf.id]}" class="fichier-item">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                 fill="none" stroke="#6b7280" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <a th:href="@{/demandes/fichiers/{fid}/telecharger(fid=${fichier.id})}"
+                               target="_blank"
+                               th:text="${fichier.nomOriginal ?: fichier.filePath}">fichier.pdf</a>
+                            <span style="font-size:0.78rem;color:#9ca3af;"
+                                  th:text="${fichier.dateUpload != null ? #temporals.format(fichier.dateUpload,'dd/MM HH:mm') : ''}"></span>
+                            <!-- Suppression uniquement si dossier pas encore finalisé -->
+                            <form th:if="${modifiable}"
+                                  th:action="@{/demandes/{id}/fichiers/{fid}/supprimer(id=${demande.id},fid=${fichier.id})}"
+                                  method="post" style="margin:0;">
+                                <button type="submit" class="btn-danger"
+                                        onclick="return confirm('Supprimer ce fichier ?')">✕</button>
+                            </form>
+                        </div>
+
+                        <!-- Formulaire d'upload — auto-submit dès sélection du fichier -->
+                        <form th:if="${modifiable}"
+                              th:action="@{/demandes/{id}/pieces/{pfId}/upload(id=${demande.id},pfId=${pf.id})}"
+                              method="post" enctype="multipart/form-data">
+                            <label th:for="'file-' + ${pf.id}" class="btn-upload-label">
+                                📎 Ajouter un scan
+                            </label>
+                            <input type="file"
+                                   th:id="'file-' + ${pf.id}"
+                                   name="file"
+                                   accept=".pdf,.jpg,.jpeg,.png,.tiff"
+                                   style="display:none;"
+                                   onchange="var lbl=this.previousElementSibling; lbl.textContent='⏳ Envoi…'; lbl.classList.add('uploading'); this.form.submit();">
+                        </form>
+                    </div>
+
+                </div><!-- fin th:each -->
+
+                <!-- Bouton Finaliser le Scan -->
+                <div th:if="${modifiable}" style="margin-top:20px;padding-top:16px;border-top:1px solid #e5e7eb;">
+                    <!-- Progression : toutes les pièces scannées → bouton actif -->
+                    <div th:if="${toutesLesPiecesScannees}">
+                        <p style="font-size:0.88rem;color:#065f46;margin-bottom:12px;font-weight:500;">
+                            ✅ Toutes les pièces sont cochées et scannées. Vous pouvez finaliser.
+                        </p>
+                        <form th:action="@{/demandes/{id}/finaliser-scan(id=${demande.id})}" method="post"
+                              style="display:inline;">
+                            <button type="submit" class="btn-scan"
+                                    onclick="return confirm('Finaliser le scan ? Le dossier sera verrouillé définitivement.')">
+                                🔒 Finaliser le scan
+                            </button>
+                        </form>
+                    </div>
+                    <!-- En attente : toutes les pièces pas encore toutes cochées/scannées -->
+                    <div th:if="${!toutesLesPiecesScannees}"
+                         style="color:#92400e;background:#fef3c7;border:1px solid #f59e0b;
+                                border-radius:8px;padding:12px 16px;font-size:0.88rem;">
+                        ⏳ Pour finaliser le scan, <strong>toutes</strong> les pièces justificatives
+                        (obligatoires et optionnelles) doivent être cochées et avoir au moins un fichier scanné.
                     </div>
                 </div>
             </div>
 
-            <!-- Actions -->
+            <!-- Actions principales -->
             <div class="form-actions">
                 <a th:if="${modifiable}"
                    th:href="@{/demandes/{id}/modifier(id=${demande.id})}"
                    class="btn btn-primary-app">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
                     Modifier ce dossier
+                </a>
+                <!-- Télécharger le récépissé PDF (uniquement après scan terminé) -->
+                <a th:if="${scanTermine}"
+                   th:href="@{/demandes/{id}/recepisse.pdf(id=${demande.id})}"
+                   class="btn-pdf">
+                    ⬇ Télécharger le récépissé PDF
                 </a>
                 <a th:href="@{/demandes}" class="btn btn-ghost">← Retour à la liste</a>
             </div>
