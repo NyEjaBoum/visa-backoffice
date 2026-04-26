@@ -62,8 +62,8 @@ LEFT JOIN type_demande td ON d.id_type_demande = td.id
 LEFT JOIN type_visa tv ON d.id_type_visa = tv.id
 LEFT JOIN situation_familiale sf ON de.id_situation_familiale = sf.id
 LEFT JOIN nationalite n ON de.id_nationalite = n.id
-LEFT JOIN carte_resident cr ON cr.id_demande = d.id
+LEFT JOIN carte_resident cr ON cr.id_passeport = p.id
 
--- Tri par numéro de passeport (pour le DISTINCT ON) 
--- puis par date de création décroissante pour garder le dossier le plus récent
-ORDER BY p.numero, d.date_creation DESC;
+-- Tri par numéro de passeport (pour le DISTINCT ON)
+-- puis par date de création décroissante ; NULLS LAST = passeports sans demande en dernier
+ORDER BY p.numero, d.date_creation DESC NULLS LAST;

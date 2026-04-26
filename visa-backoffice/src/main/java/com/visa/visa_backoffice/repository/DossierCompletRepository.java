@@ -9,9 +9,11 @@ import java.util.List;
 public interface DossierCompletRepository extends JpaRepository<DossierComplet, Integer> {
 
     @Query("SELECT d FROM DossierComplet d WHERE " +
+           "LOWER(d.nom) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(d.prenoms) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(d.passeportNumero) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(d.visaTransformableNumero) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(d.carteResidentNumero) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(d.demandeNumero) LIKE LOWER(CONCAT('%', :search, '%'))") 
+           "LOWER(d.demandeNumero) LIKE LOWER(CONCAT('%', :search, '%'))")
     List<DossierComplet> searchDossierExistants(@Param("search") String search);
 }

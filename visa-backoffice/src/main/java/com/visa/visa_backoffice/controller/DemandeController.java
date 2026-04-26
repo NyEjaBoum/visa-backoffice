@@ -182,15 +182,7 @@ public class DemandeController {
         Integer typeVisaId = demande.getTypeVisa() != null ? demande.getTypeVisa().getId() : null;
         model.addAttribute("piecesJustificatives", pieceJustificativeService.findForTypeVisa(typeVisaId));
 
-        // Upload inline dans le formulaire de modification
-        List<PieceFournie> piecesFournies = pieceFournieService.findAllForDemande(id);
-        model.addAttribute("piecesFournies", piecesFournies);
-        Map<Integer, List<?>> fichiersByPiece = new LinkedHashMap<>();
-        for (PieceFournie pf : piecesFournies) {
-            fichiersByPiece.put(pf.getId(), pieceFichierService.findByPieceFournieId(pf.getId()));
-        }
-        model.addAttribute("fichiersByPiece", fichiersByPiece);
-
+        chargerDonneesUpload(id, model);
         return "demandes/formulaire";
     }
 
@@ -208,6 +200,7 @@ public class DemandeController {
             model.addAttribute("demandeId", id);
             chargerNomenclatures(model);
             model.addAttribute("piecesJustificatives", pieceJustificativeService.findForTypeVisa(form.getTypeVisaId()));
+            chargerDonneesUpload(id, model);
             return "demandes/formulaire";
         }
     }
@@ -341,6 +334,16 @@ public class DemandeController {
     // ─────────────────────────────────────────────────────────────────────────
     // UTILITAIRES
     // ─────────────────────────────────────────────────────────────────────────
+
+    private void chargerDonneesUpload(Integer demandeId, Model model) {
+        List<PieceFournie> piecesFournies = pieceFournieService.findAllForDemande(demandeId);
+        model.addAttribute("piecesFournies", piecesFournies);
+        Map<Integer, List<?>> fichiersByPiece = new LinkedHashMap<>();
+        for (PieceFournie pf : piecesFournies) {
+            fichiersByPiece.put(pf.getId(), pieceFichierService.findByPieceFournieId(pf.getId()));
+        }
+        model.addAttribute("fichiersByPiece", fichiersByPiece);
+    }
 
     private void uploadFichiersCreation(Integer demandeId,
                                          Map<String, MultipartFile> fileMap,

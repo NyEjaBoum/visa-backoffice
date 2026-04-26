@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -60,8 +62,28 @@ public class PieceFournieService {
     public void updateChecklist(Demande demande,
                                 List<PieceJustificative> pieces,
                                 List<Integer> checkedPieceIds) {
-        if (demande == null) return;
-        pieceFournieRepository.deleteAllByDemande_Id(demande.getId());
-        creerChecklist(demande, pieces, checkedPieceIds);
+        if (demande == null || pieces == null) return;
+        List<Integer> checked = checkedPieceIds == null ? Collections.emptyList() : checkedPieceIds;
+
+        // Indexer les enregistrements existants par pieceJustificative.id
+        // pour NE PAS les supprimer (ce qui CASCADE-deleterait les PieceFichier)
+        Map<Integer, PieceFournie> existingByPjId = pieceFournieRepository
+                .findAllForDemande(demande.getId())
+                .stream()
+                .collect(Collectors.toMap(
+                        pf -> pf.getPieceJustificative().getId(),
+                        pf -> pf
+                ));
+
+        for (PieceJustificative pj : pieces) {
+            PieceFournie pf = existingByPjId.get(pj.getId());
+            if (pf == null) {
+                pf = new PieceFournie();
+                pf.setDemande(demande);
+                pf.setPieceJustificative(pj);
+            }
+            pf.setIsPresent(checked.contains(pj.getId()));
+            pieceFournieRepository.save(pf);
+        }
     }
 }

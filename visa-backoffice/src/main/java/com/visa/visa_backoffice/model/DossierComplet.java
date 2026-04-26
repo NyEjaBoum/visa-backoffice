@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 @Getter
 public class DossierComplet {
 
-    @Id
     @Column(name = "demande_id")
     private Integer demandeId;
 
@@ -70,6 +69,7 @@ public class DossierComplet {
     private String nationalite;
 
     // --- PASSEPORT ---
+    @Id
     @Column(name = "passeport_id")
     private Integer passeportId;
 
