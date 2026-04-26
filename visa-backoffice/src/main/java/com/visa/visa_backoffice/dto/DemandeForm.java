@@ -41,6 +41,23 @@ public class DemandeForm {
     // Visa transformable (optionnel)
     private String visaTransformableNumero;
 
+    // Rattrapage — passé injecté (null en cas normal)
+    private String numeroCarteResident;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate dateDebutCarte;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate dateFinCarte;
+
+    private String numeroVisa;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate dateDebutVisa;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate dateFinVisa;
+
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate visaTransformableDateEntree;
 

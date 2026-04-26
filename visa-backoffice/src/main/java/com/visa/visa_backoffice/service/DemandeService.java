@@ -154,11 +154,9 @@ public class DemandeService {
 
         String vtNum = form.getVisaTransformableNumero();
         if (vtNum != null && !vtNum.isBlank()) {
-            // Priorité : le VT déjà lié à CETTE demande (évite la collision unique sur numero)
             VisaTransformable vt = demande.getVisaTransformable();
 
             if (vt == null || !vtNum.trim().equals(vt.getNumero())) {
-                // Pas de VT lié, ou l'opérateur a saisi un numero différent → cherche par numero
                 VisaTransformable vtParNumero = visaTransformableService.findByNumero(vtNum).orElse(null);
                 if (vtParNumero != null) {
                     if (vtParNumero.getDemandeur() != null
@@ -170,7 +168,6 @@ public class DemandeService {
                 } else if (vt == null) {
                     vt = new VisaTransformable();
                 }
-                // Si vt != null et numero différent : on met à jour l'existant avec le nouveau numero
             }
 
             vt.updateFromForm(form, passeport, demandeur);
@@ -204,7 +201,7 @@ public class DemandeService {
 
         // ÉTAPE A : demande d'injection (le passé — statut VISA APPROUVE)
         Demande demandeInj = new Demande();
-        demandeInj.setNumDemande(genererNumeroDossier() + "-INJ");
+        demandeInj.setNumDemande(genererNumeroDossier());
         demandeInj.setDemandeur(demandeur);
         demandeInj.setVisaTransformable(vt);
         demandeInj.setTypeDemande(typeDemandeService.findById(1));
@@ -229,10 +226,11 @@ public class DemandeService {
         demandeB = demandeRepository.save(demandeB);
         historiqueDemandeStatutService.creer(demandeB, demandeB.getStatut());
 
+        List<PieceJustificative> piecesB = pieceJustificativeService.findForTypeVisa(form.getTypeVisaId());
         pieceFournieService.creerChecklist(
                 demandeB,
-                pieceJustificativeService.findForTypeVisa(form.getTypeVisaId()),
-                form.getPiecesFourniesIds());
+                piecesB,
+                piecesB.stream().map(PieceJustificative::getId).toList());
 
         return demandeB;
     }
