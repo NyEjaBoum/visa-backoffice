@@ -18,5 +18,12 @@ public interface PieceFournieRepository extends JpaRepository<PieceFournie, Inte
            "WHERE pf.demande.id = :demandeId AND pf.isPresent = true")
     List<Integer> findPresentPieceIds(@Param("demandeId") Integer demandeId);
 
+    @Query("SELECT pf FROM PieceFournie pf " +
+           "JOIN FETCH pf.pieceJustificative " +
+           "WHERE pf.demande.id = :demandeId AND pf.isPresent = true")
+    List<PieceFournie> findPresentesForDemande(@Param("demandeId") Integer demandeId);
+
+    java.util.Optional<PieceFournie> findByDemande_IdAndPieceJustificative_Id(Integer demandeId, Integer pieceJustificativeId);
+
     void deleteAllByDemande_Id(Integer demandeId);
 }

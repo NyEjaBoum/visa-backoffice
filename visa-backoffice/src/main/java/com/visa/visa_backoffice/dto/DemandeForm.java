@@ -10,13 +10,9 @@ import java.util.List;
 public class DemandeForm {
 
     // Individu
-
     private Integer demandeurId;
-
     private List<Integer> piecesFourniesIds;
-
     private String nom;
-    
     private String prenoms;
     private String nomJeuneFille;
 
@@ -26,9 +22,7 @@ public class DemandeForm {
     private Integer situationFamilialeId;
     private Integer nationaliteId;
     private String profession;
-    
     private String adresseMada;
-    
     private String contactMada;
 
     // Passeport
@@ -42,7 +36,6 @@ public class DemandeForm {
 
     // Demande
     private Integer typeVisaId;
-    
     private Integer typeDemandeId;
 
     // Visa transformable (optionnel)
@@ -55,6 +48,23 @@ public class DemandeForm {
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate visaTransformableDateFinVisa;
+
+    // Rattrapage — passé injecté (null en cas normal)
+    private String numeroCarteResident;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate dateDebutCarte;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate dateFinCarte;
+
+    private String numeroVisa;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate dateDebutVisa;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate dateFinVisa;
 
     public void validateOrThrow() {
         requireNotBlank(nom, "Le nom est obligatoire");
@@ -137,4 +147,22 @@ public class DemandeForm {
 
     public LocalDate getVisaTransformableDateFinVisa() { return visaTransformableDateFinVisa; }
     public void setVisaTransformableDateFinVisa(LocalDate visaTransformableDateFinVisa) { this.visaTransformableDateFinVisa = visaTransformableDateFinVisa; }
+
+    public String getNumeroCarteResident() { return numeroCarteResident; }
+    public void setNumeroCarteResident(String numeroCarteResident) { this.numeroCarteResident = numeroCarteResident; }
+
+    public LocalDate getDateDebutCarte() { return dateDebutCarte; }
+    public void setDateDebutCarte(LocalDate dateDebutCarte) { this.dateDebutCarte = dateDebutCarte; }
+
+    public LocalDate getDateFinCarte() { return dateFinCarte; }
+    public void setDateFinCarte(LocalDate dateFinCarte) { this.dateFinCarte = dateFinCarte; }
+
+    public String getNumeroVisa() { return numeroVisa; }
+    public void setNumeroVisa(String numeroVisa) { this.numeroVisa = numeroVisa; }
+
+    public LocalDate getDateDebutVisa() { return dateDebutVisa; }
+    public void setDateDebutVisa(LocalDate dateDebutVisa) { this.dateDebutVisa = dateDebutVisa; }
+
+    public LocalDate getDateFinVisa() { return dateFinVisa; }
+    public void setDateFinVisa(LocalDate dateFinVisa) { this.dateFinVisa = dateFinVisa; }
 }

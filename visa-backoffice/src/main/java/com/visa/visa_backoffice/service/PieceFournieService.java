@@ -36,6 +36,11 @@ public class PieceFournieService {
         return pieceFournieRepository.findAllForDemande(demandeId);
     }
 
+    @Transactional(readOnly = true)
+    public java.util.Optional<PieceFournie> findByDemandeIdAndPieceJustificativeId(Integer demandeId, Integer pieceId) {
+        return pieceFournieRepository.findByDemande_IdAndPieceJustificative_Id(demandeId, pieceId);
+    }
+
     public void creerChecklist(Demande demande,
                                List<PieceJustificative> pieces,
                                List<Integer> checkedPieceIds) {

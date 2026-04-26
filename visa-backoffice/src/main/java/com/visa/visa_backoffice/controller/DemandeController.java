@@ -4,14 +4,25 @@ import com.visa.visa_backoffice.dto.DemandeForm;
 import com.visa.visa_backoffice.model.Demande;
 import com.visa.visa_backoffice.model.DossierComplet;
 import com.visa.visa_backoffice.model.Passeport;
+import com.visa.visa_backoffice.model.PieceFournie;
 import com.visa.visa_backoffice.service.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.net.MalformedURLException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,18 +37,31 @@ public class DemandeController {
     private final PasseportService passeportService;
     private final PieceFournieService pieceFournieService;
     private final PieceJustificativeService pieceJustificativeService;
+    private final PieceFichierService pieceFichierService;
+    private final PdfService pdfService;
+
+    @Value("${app.upload.dir:./uploads}")
+    private String uploadDir;
 
     public DemandeController(DemandeService demandeService,
                              NomenclatureService nomenclatureService,
                              PasseportService passeportService,
                              PieceFournieService pieceFournieService,
-                             PieceJustificativeService pieceJustificativeService) {
+                             PieceJustificativeService pieceJustificativeService,
+                             PieceFichierService pieceFichierService,
+                             PdfService pdfService) {
         this.demandeService = demandeService;
         this.nomenclatureService = nomenclatureService;
         this.passeportService = passeportService;
         this.pieceFournieService = pieceFournieService;
         this.pieceJustificativeService = pieceJustificativeService;
+        this.pieceFichierService = pieceFichierService;
+        this.pdfService = pdfService;
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // LISTE & FORMULAIRES
+    // ─────────────────────────────────────────────────────────────────────────
 
     @GetMapping
     public String liste(Model model) {
@@ -55,12 +79,14 @@ public class DemandeController {
 
     @PostMapping
     public String creer(@ModelAttribute("form") DemandeForm form,
+                        @RequestParam(required = false) Map<String, MultipartFile> allFiles,
                         RedirectAttributes redirectAttrs,
                         Model model) {
         try {
-            form.validateOrThrow();
             Demande demande = demandeService.creer(form);
-            redirectAttrs.addFlashAttribute("successMessage", "Demande créée avec succès. Numéro : " + demande.getNumDemande());
+            uploadFichiersCreation(demande.getId(), allFiles);
+            redirectAttrs.addFlashAttribute("successMessage",
+                    "Demande créée avec succès. Numéro : " + demande.getNumDemande());
             return "redirect:/demandes/" + demande.getId();
         } catch (ResponseStatusException e) {
             model.addAttribute("errorMessage", e.getReason());
@@ -70,18 +96,55 @@ public class DemandeController {
         }
     }
 
+    @PostMapping("/rattrapage")
+    public String creerSansDonneesAnterieur(@ModelAttribute("form") DemandeForm form,
+                                            @RequestParam(required = false) Map<String, MultipartFile> allFiles,
+                                            RedirectAttributes redirectAttrs,
+                                            Model model) {
+        try {
+            Demande demande = demandeService.creerSansDonneesAnterieur(form);
+            uploadFichiersCreation(demande.getId(), allFiles);
+            redirectAttrs.addFlashAttribute("successMessage",
+                    "Demande créée avec succès (rattrapage). Numéro : " + demande.getNumDemande());
+            return "redirect:/demandes/" + demande.getId();
+        } catch (ResponseStatusException e) {
+            model.addAttribute("errorMessage", e.getReason());
+            chargerNomenclatures(model);
+            model.addAttribute("piecesJustificatives", pieceJustificativeService.findAll());
+            return "demandes/formulaire";
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DÉTAIL & MODIFICATION
+    // ─────────────────────────────────────────────────────────────────────────
+
     @GetMapping("/{id}")
     public String detail(@PathVariable Integer id, Model model) {
         Demande demande = demandeService.findByIdOrThrow(id);
         model.addAttribute("demande", demande);
+
         Passeport passeport = passeportService.findLastForDemandeur(
-            demande.getDemandeur() == null ? null : demande.getDemandeur().getId()
+                demande.getDemandeur() == null ? null : demande.getDemandeur().getId()
         ).orElse(null);
         model.addAttribute("passeport", passeport);
-        model.addAttribute("piecesFournies", pieceFournieService.findAllForDemande(id));
 
-        boolean modifiable = demande.getStatut() != null && "CREE".equalsIgnoreCase(demande.getStatut().getLibelle());
+        List<PieceFournie> piecesFournies = pieceFournieService.findAllForDemande(id);
+        model.addAttribute("piecesFournies", piecesFournies);
+
+        // Pour chaque pièce fournie, charger ses fichiers scannés
+        Map<Integer, List<?>> fichiersByPiece = new LinkedHashMap<>();
+        for (PieceFournie pf : piecesFournies) {
+            fichiersByPiece.put(pf.getId(), pieceFichierService.findByPieceFournieId(pf.getId()));
+        }
+        model.addAttribute("fichiersByPiece", fichiersByPiece);
+
+        String statutLibelle = demande.getStatut() != null ? demande.getStatut().getLibelle() : "";
+        boolean modifiable = "CREE".equalsIgnoreCase(statutLibelle);
+        boolean scanTermine = "SCAN TERMINÉ".equalsIgnoreCase(statutLibelle);
         model.addAttribute("modifiable", modifiable);
+        model.addAttribute("scanTermine", scanTermine);
+
         return "demandes/detail";
     }
 
@@ -94,19 +157,28 @@ public class DemandeController {
         }
 
         Passeport passeport = passeportService.findLastForDemandeur(
-            demande.getDemandeur() == null ? null : demande.getDemandeur().getId()
+                demande.getDemandeur() == null ? null : demande.getDemandeur().getId()
         ).orElse(null);
-        
+
         DemandeForm form = buildFormFromDemande(demande, passeport);
         form.setPiecesFourniesIds(pieceFournieService.findPresentPieceIds(id));
-        
+
         model.addAttribute("form", form);
         model.addAttribute("demandeId", id);
         chargerNomenclatures(model);
-        
+
         Integer typeVisaId = demande.getTypeVisa() != null ? demande.getTypeVisa().getId() : null;
         model.addAttribute("piecesJustificatives", pieceJustificativeService.findForTypeVisa(typeVisaId));
-        
+
+        // Upload inline dans le formulaire de modification
+        List<PieceFournie> piecesFournies = pieceFournieService.findAllForDemande(id);
+        model.addAttribute("piecesFournies", piecesFournies);
+        Map<Integer, List<?>> fichiersByPiece = new LinkedHashMap<>();
+        for (PieceFournie pf : piecesFournies) {
+            fichiersByPiece.put(pf.getId(), pieceFichierService.findByPieceFournieId(pf.getId()));
+        }
+        model.addAttribute("fichiersByPiece", fichiersByPiece);
+
         return "demandes/formulaire";
     }
 
@@ -116,7 +188,6 @@ public class DemandeController {
                            RedirectAttributes redirectAttrs,
                            Model model) {
         try {
-            form.validateOrThrow();
             demandeService.modifier(id, form);
             redirectAttrs.addFlashAttribute("successMessage", "Demande mise à jour avec succès.");
             return "redirect:/demandes/" + id;
@@ -129,14 +200,101 @@ public class DemandeController {
         }
     }
 
-    // --- Gardé pour l'autocomplete (Recherche) ---
+    // ─────────────────────────────────────────────────────────────────────────
+    // SPRINT 3 — UPLOAD FICHIERS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @PostMapping("/{id}/pieces/{pfId}/upload")
+    public String uploadFichier(@PathVariable Integer id,
+                                @PathVariable Integer pfId,
+                                @RequestParam("file") MultipartFile file,
+                                RedirectAttributes redirectAttrs) {
+        try {
+            pieceFichierService.upload(pfId, file);
+            redirectAttrs.addFlashAttribute("successMessage", "Fichier ajouté avec succès.");
+        } catch (ResponseStatusException e) {
+            redirectAttrs.addFlashAttribute("errorMessage", e.getReason());
+        }
+        return "redirect:/demandes/" + id;
+    }
+
+    @PostMapping("/{id}/fichiers/{fichierId}/supprimer")
+    public String supprimerFichier(@PathVariable Integer id,
+                                   @PathVariable Integer fichierId,
+                                   RedirectAttributes redirectAttrs) {
+        try {
+            pieceFichierService.supprimer(fichierId);
+            redirectAttrs.addFlashAttribute("successMessage", "Fichier supprimé.");
+        } catch (ResponseStatusException e) {
+            redirectAttrs.addFlashAttribute("errorMessage", e.getReason());
+        }
+        return "redirect:/demandes/" + id;
+    }
+
+    @GetMapping("/fichiers/{fichierId}/telecharger")
+    public ResponseEntity<Resource> telechargerFichier(@PathVariable Integer fichierId) {
+        var pf = pieceFichierService.findByIdOrThrow(fichierId);
+        try {
+            Path filePath = Paths.get(uploadDir).toAbsolutePath().normalize().resolve(pf.getFilePath());
+            Resource resource = new UrlResource(filePath.toUri());
+            if (!resource.exists()) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Fichier non trouvé sur le serveur.");
+            }
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "inline; filename=\"" + pf.getNomOriginal() + "\"")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+        } catch (MalformedURLException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Chemin de fichier invalide.");
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SPRINT 3 — FINALISATION & PDF
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @PostMapping("/{id}/finaliser-scan")
+    public String finaliserScan(@PathVariable Integer id, RedirectAttributes redirectAttrs) {
+        try {
+            demandeService.finaliserScan(id);
+            redirectAttrs.addFlashAttribute("successMessage",
+                    "Scan finalisé ! Le dossier est désormais verrouillé en lecture seule.");
+        } catch (ResponseStatusException e) {
+            redirectAttrs.addFlashAttribute("errorMessage", e.getReason());
+        }
+        return "redirect:/demandes/" + id;
+    }
+
+    @GetMapping("/{id}/recepisse.pdf")
+    public ResponseEntity<byte[]> telechargerRecepisse(@PathVariable Integer id) {
+        Demande demande = demandeService.findByIdOrThrow(id);
+        Passeport passeport = passeportService.findLastForDemandeur(
+                demande.getDemandeur() == null ? null : demande.getDemandeur().getId()
+        ).orElse(null);
+        List<PieceFournie> piecesPresentes = pieceFournieService.findAllForDemande(id)
+                .stream()
+                .filter(pf -> Boolean.TRUE.equals(pf.getIsPresent()))
+                .collect(Collectors.toList());
+
+        byte[] pdf = pdfService.genererRecepisse(demande, passeport, piecesPresentes);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"recepisse-" + demande.getNumDemande() + ".pdf\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // AUTOCOMPLETE
+    // ─────────────────────────────────────────────────────────────────────────
+
     @GetMapping("/antecedents/autocomplete")
     @ResponseBody
     public ResponseEntity<List<Map<String, Object>>> autocomplete(
             @RequestParam(required = false, defaultValue = "") String q) {
-        if (q.isBlank()) {
-            return ResponseEntity.ok(List.of());
-        }
+        if (q.isBlank()) return ResponseEntity.ok(List.of());
         List<DossierComplet> resultats = demandeService.rechercherAntecedents(q.trim());
         List<Map<String, Object>> items = resultats.stream().map(d -> {
             Map<String, Object> item = new LinkedHashMap<>();
@@ -166,6 +324,25 @@ public class DemandeController {
             return item;
         }).collect(Collectors.toList());
         return ResponseEntity.ok(items);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // UTILITAIRES
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void uploadFichiersCreation(Integer demandeId, Map<String, MultipartFile> allFiles) {
+        if (allFiles == null || demandeId == null) return;
+        for (Map.Entry<String, MultipartFile> entry : allFiles.entrySet()) {
+            String key = entry.getKey();
+            MultipartFile file = entry.getValue();
+            if (!key.startsWith("fichier_") || file == null || file.isEmpty()) continue;
+            try {
+                Integer pieceJustificativeId = Integer.parseInt(key.substring("fichier_".length()));
+                pieceFournieService.findByDemandeIdAndPieceJustificativeId(demandeId, pieceJustificativeId)
+                        .ifPresent(pf -> pieceFichierService.upload(pf.getId(), file));
+            } catch (NumberFormatException | ResponseStatusException ignored) {
+            }
+        }
     }
 
     private void chargerNomenclatures(Model model) {
