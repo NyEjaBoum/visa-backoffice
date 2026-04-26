@@ -1,6 +1,7 @@
 package com.visa.visa_backoffice.service;
 
 import com.visa.visa_backoffice.model.VisaTransformable;
+import com.visa.visa_backoffice.model.Demandeur;
 import com.visa.visa_backoffice.repository.VisaTransformableRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +40,11 @@ public class VisaTransformableService {
         if (demandeurId == null) return Optional.empty();
         return visaTransformableRepository.findFirstByDemandeurIdOrderByIdDesc(demandeurId);
     }
+
+public VisaTransformable findByDemandeur(Demandeur demandeur) {
+    // On retourne null si rien n'est trouvé au lieu de lancer une erreur
+    return findLastForDemandeur(demandeur.getId()).orElse(null);
+}
 
     public VisaTransformable update(Integer id, VisaTransformable payload) {
         VisaTransformable existing = findByIdOrThrow(id);

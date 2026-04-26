@@ -49,6 +49,11 @@ public class PasseportService {
         return passeportRepository.findFirstByDemandeurIdOrderByIdDesc(demandeurId);
     }
 
+public Passeport findByDemandeur(Demandeur demandeur) {
+    // Même chose ici
+    return findLastForDemandeur(demandeur.getId()).orElse(null);
+}
+
     public Passeport create(Passeport passeport) {
         return passeportRepository.save(passeport);
     }

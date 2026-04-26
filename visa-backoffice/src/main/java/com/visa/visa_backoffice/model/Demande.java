@@ -33,9 +33,9 @@ public class Demande {
     @JoinColumn(name = "id_statut")
     private Statut statut;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_passeport")
-    private Passeport passeport;
+    // @ManyToOne(fetch = FetchType.LAZY)
+    // @JoinColumn(name = "id_passeport")
+    // private Passeport passeport;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_visa_transformable")
@@ -82,13 +82,13 @@ public class Demande {
     public Statut getStatut() { return statut; }
     public void setStatut(Statut statut) { this.statut = statut; }
 
-    public Passeport getPasseport() { return passeport; }
-    public void setPasseport(Passeport passeport) {
-        if (passeport == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passeport obligatoire");
-        }
-        this.passeport = passeport;
-    }
+    // public Passeport getPasseport() { return passeport; }
+    // public void setPasseport(Passeport passeport) {
+    //     if (passeport == null) {
+    //         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passeport obligatoire");
+    //     }
+    //     this.passeport = passeport;
+    // }
 
     public VisaTransformable getVisaTransformable() { return visaTransformable; }
     public void setVisaTransformable(VisaTransformable visaTransformable) { this.visaTransformable = visaTransformable; }
