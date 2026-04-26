@@ -16,5 +16,8 @@
     <include file="sprint2/01_statut_visa_approuve.sql" relativeToChangelogFile="true"/>
     <include file="sprint2/02_view_dossier_complet.sql" relativeToChangelogFile="true"/>
     <include file="sprint2/03_view_autocomplete_fix.sql" relativeToChangelogFile="true"/>
+    <include file="sprint2/04_view_sprint2_casnormal.sql" relativeToChangelogFile="true"/>
+    <include file="sprint2/05_fix_view_cas_normal.sql" relativeToChangelogFile="true"/>
+    <include file="sprint2/06_data_demandeur_visa_approuve.sql" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

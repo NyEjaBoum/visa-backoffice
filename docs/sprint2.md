@@ -20,6 +20,8 @@ Si trouvé :
 - Liaison avec :
   - Dernier visa_transformable
 
+verifier d'abord si il a vraiment carte resident et visa avant de faire duplicata ou transfert
+
 ---
 
 #### 2. Cas Problématique (Rattrapage sans données)
