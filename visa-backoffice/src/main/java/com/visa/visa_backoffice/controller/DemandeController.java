@@ -15,8 +15,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -79,12 +81,14 @@ public class DemandeController {
 
     @PostMapping
     public String creer(@ModelAttribute("form") DemandeForm form,
-                        @RequestParam(required = false) Map<String, MultipartFile> allFiles,
+                        HttpServletRequest request,
                         RedirectAttributes redirectAttrs,
                         Model model) {
         try {
             Demande demande = demandeService.creer(form);
-            uploadFichiersCreation(demande.getId(), allFiles);
+            if (request instanceof MultipartHttpServletRequest mReq) {
+                uploadFichiersCreation(demande.getId(), mReq.getFileMap(), redirectAttrs);
+            }
             redirectAttrs.addFlashAttribute("successMessage",
                     "Demande créée avec succès. Numéro : " + demande.getNumDemande());
             return "redirect:/demandes/" + demande.getId();
@@ -98,12 +102,14 @@ public class DemandeController {
 
     @PostMapping("/rattrapage")
     public String creerSansDonneesAnterieur(@ModelAttribute("form") DemandeForm form,
-                                            @RequestParam(required = false) Map<String, MultipartFile> allFiles,
+                                            HttpServletRequest request,
                                             RedirectAttributes redirectAttrs,
                                             Model model) {
         try {
             Demande demande = demandeService.creerSansDonneesAnterieur(form);
-            uploadFichiersCreation(demande.getId(), allFiles);
+            if (request instanceof MultipartHttpServletRequest mReq) {
+                uploadFichiersCreation(demande.getId(), mReq.getFileMap(), redirectAttrs);
+            }
             redirectAttrs.addFlashAttribute("successMessage",
                     "Demande créée avec succès (rattrapage). Numéro : " + demande.getNumDemande());
             return "redirect:/demandes/" + demande.getId();
@@ -144,6 +150,12 @@ public class DemandeController {
         boolean scanTermine = "SCAN TERMINÉ".equalsIgnoreCase(statutLibelle);
         model.addAttribute("modifiable", modifiable);
         model.addAttribute("scanTermine", scanTermine);
+
+        boolean toutesPresentes = !piecesFournies.isEmpty()
+                && piecesFournies.stream().allMatch(pf -> Boolean.TRUE.equals(pf.getIsPresent()));
+        boolean toutesLesPiecesScannees = toutesPresentes
+                && pieceFichierService.toutesLesPiecesOntUnFichier(piecesFournies);
+        model.addAttribute("toutesLesPiecesScannees", toutesLesPiecesScannees);
 
         return "demandes/detail";
     }
@@ -330,9 +342,11 @@ public class DemandeController {
     // UTILITAIRES
     // ─────────────────────────────────────────────────────────────────────────
 
-    private void uploadFichiersCreation(Integer demandeId, Map<String, MultipartFile> allFiles) {
-        if (allFiles == null || demandeId == null) return;
-        for (Map.Entry<String, MultipartFile> entry : allFiles.entrySet()) {
+    private void uploadFichiersCreation(Integer demandeId,
+                                         Map<String, MultipartFile> fileMap,
+                                         RedirectAttributes redirectAttrs) {
+        if (fileMap == null || demandeId == null) return;
+        for (Map.Entry<String, MultipartFile> entry : fileMap.entrySet()) {
             String key = entry.getKey();
             MultipartFile file = entry.getValue();
             if (!key.startsWith("fichier_") || file == null || file.isEmpty()) continue;
@@ -340,7 +354,11 @@ public class DemandeController {
                 Integer pieceJustificativeId = Integer.parseInt(key.substring("fichier_".length()));
                 pieceFournieService.findByDemandeIdAndPieceJustificativeId(demandeId, pieceJustificativeId)
                         .ifPresent(pf -> pieceFichierService.upload(pf.getId(), file));
-            } catch (NumberFormatException | ResponseStatusException ignored) {
+            } catch (NumberFormatException e) {
+                // clé mal formée, on ignore
+            } catch (ResponseStatusException e) {
+                redirectAttrs.addFlashAttribute("errorMessage",
+                        "Erreur upload « " + file.getOriginalFilename() + " » : " + e.getReason());
             }
         }
     }

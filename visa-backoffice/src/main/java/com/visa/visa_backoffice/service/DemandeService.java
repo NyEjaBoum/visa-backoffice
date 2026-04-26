@@ -246,17 +246,23 @@ public class DemandeService {
         Demande demande = findByIdOrThrow(demandeId);
         verifierDossierModifiable(demande);
 
-        List<PieceFournie> piecesPresentes = pieceFournieRepository
-                .findPresentesForDemande(demandeId);
+        List<PieceFournie> toutesLesPieces = pieceFournieRepository.findAllForDemande(demandeId);
 
-        if (piecesPresentes.isEmpty()) {
+        if (toutesLesPieces.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Aucune pièce cochée. Cochez au moins une pièce avant de finaliser.");
+                    "Aucune pièce justificative configurée pour ce dossier.");
         }
 
-        if (!pieceFichierService.toutesLesPiecesOntUnFichier(piecesPresentes)) {
+        boolean toutesPresentes = toutesLesPieces.stream()
+                .allMatch(pf -> Boolean.TRUE.equals(pf.getIsPresent()));
+        if (!toutesPresentes) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Toutes les pièces cochées doivent avoir au moins un fichier scanné avant la finalisation.");
+                    "Toutes les pièces justificatives (obligatoires et optionnelles) doivent être cochées avant la finalisation.");
+        }
+
+        if (!pieceFichierService.toutesLesPiecesOntUnFichier(toutesLesPieces)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Toutes les pièces justificatives doivent avoir au moins un fichier scanné avant la finalisation.");
         }
 
         demande.setStatut(statutService.getStatutScanTermine());

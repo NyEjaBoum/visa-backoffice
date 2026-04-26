@@ -242,16 +242,26 @@
 
                 <!-- Bouton Finaliser le Scan -->
                 <div th:if="${modifiable}" style="margin-top:20px;padding-top:16px;border-top:1px solid #e5e7eb;">
-                    <p style="font-size:0.88rem;color:#6b7280;margin-bottom:12px;">
-                        Une fois tous les fichiers ajoutés, finalisez le scan pour verrouiller le dossier.
-                    </p>
-                    <form th:action="@{/demandes/{id}/finaliser-scan(id=${demande.id})}" method="post"
-                          style="display:inline;">
-                        <button type="submit" class="btn-scan"
-                                onclick="return confirm('Finaliser le scan ? Le dossier sera verrouillé définitivement.')">
-                            🔒 Finaliser le scan
-                        </button>
-                    </form>
+                    <!-- Progression : toutes les pièces scannées → bouton actif -->
+                    <div th:if="${toutesLesPiecesScannees}">
+                        <p style="font-size:0.88rem;color:#065f46;margin-bottom:12px;font-weight:500;">
+                            ✅ Toutes les pièces sont cochées et scannées. Vous pouvez finaliser.
+                        </p>
+                        <form th:action="@{/demandes/{id}/finaliser-scan(id=${demande.id})}" method="post"
+                              style="display:inline;">
+                            <button type="submit" class="btn-scan"
+                                    onclick="return confirm('Finaliser le scan ? Le dossier sera verrouillé définitivement.')">
+                                🔒 Finaliser le scan
+                            </button>
+                        </form>
+                    </div>
+                    <!-- En attente : toutes les pièces pas encore toutes cochées/scannées -->
+                    <div th:if="${!toutesLesPiecesScannees}"
+                         style="color:#92400e;background:#fef3c7;border:1px solid #f59e0b;
+                                border-radius:8px;padding:12px 16px;font-size:0.88rem;">
+                        ⏳ Pour finaliser le scan, <strong>toutes</strong> les pièces justificatives
+                        (obligatoires et optionnelles) doivent être cochées et avoir au moins un fichier scanné.
+                    </div>
                 </div>
             </div>
 
