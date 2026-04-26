@@ -13,8 +13,14 @@
                         background:#fff; border:1px solid #e5e7eb; border-radius:6px; margin-bottom:6px; }
         .fichier-item a { flex:1; color:#1d4ed8; text-decoration:none; font-size:0.88rem; }
         .fichier-item a:hover { text-decoration:underline; }
-        .upload-form { display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap; }
-        .upload-form input[type=file] { font-size:0.85rem; flex:1; min-width:200px; }
+        .btn-upload-label {
+            display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
+            padding: 6px 14px; background: #fff; border: 1.5px dashed #9ca3af;
+            border-radius: 6px; cursor: pointer; font-size: 0.83rem;
+            color: #374151; font-weight: 500; transition: background 0.15s, border-color 0.15s;
+        }
+        .btn-upload-label:hover { background: #f3f4f6; border-color: #6b7280; }
+        .btn-upload-label.uploading { opacity: 0.6; cursor: wait; }
         .badge-scan { background:#d1fae5; color:#065f46; padding:3px 10px; border-radius:12px;
                       font-size:0.78rem; font-weight:700; }
         .badge-cree  { background:#dbeafe; color:#1e40af; }
@@ -225,16 +231,19 @@
                             </form>
                         </div>
 
-                        <!-- Formulaire d'upload (seulement si dossier encore modifiable) -->
+                        <!-- Formulaire d'upload — auto-submit dès sélection du fichier -->
                         <form th:if="${modifiable}"
                               th:action="@{/demandes/{id}/pieces/{pfId}/upload(id=${demande.id},pfId=${pf.id})}"
-                              method="post" enctype="multipart/form-data" class="upload-form">
-                            <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.tiff"
-                                   required style="font-size:0.85rem;flex:1;min-width:200px;">
-                            <button type="submit" class="btn btn-ghost"
-                                    style="white-space:nowrap;font-size:0.85rem;padding:6px 14px;">
-                                ↑ Ajouter un scan
-                            </button>
+                              method="post" enctype="multipart/form-data">
+                            <label th:for="'file-' + ${pf.id}" class="btn-upload-label">
+                                📎 Ajouter un scan
+                            </label>
+                            <input type="file"
+                                   th:id="'file-' + ${pf.id}"
+                                   name="file"
+                                   accept=".pdf,.jpg,.jpeg,.png,.tiff"
+                                   style="display:none;"
+                                   onchange="var lbl=this.previousElementSibling; lbl.textContent='⏳ Envoi…'; lbl.classList.add('uploading'); this.form.submit();">
                         </form>
                     </div>
 

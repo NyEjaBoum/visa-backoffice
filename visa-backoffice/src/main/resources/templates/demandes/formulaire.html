@@ -280,16 +280,25 @@
                             </form>
                         </div>
 
-                        <!-- Formulaire d'ajout -->
+                        <!-- Formulaire d'ajout — auto-submit dès sélection -->
                         <form th:action="@{/demandes/{id}/pieces/{pfId}/upload(id=${demandeId},pfId=${pf.id})}"
                               method="post" enctype="multipart/form-data"
-                              style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
-                            <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.tiff"
-                                   style="font-size:0.83rem;flex:1;min-width:180px;">
-                            <button type="submit" class="btn btn-ghost"
-                                    style="font-size:0.83rem;padding:5px 12px;white-space:nowrap;">
-                                ↑ Ajouter
-                            </button>
+                              style="margin-top:6px;">
+                            <label th:for="'fmod-' + ${pf.id}"
+                                   style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;
+                                          background:#fff;border:1.5px dashed #9ca3af;border-radius:6px;
+                                          cursor:pointer;font-size:0.82rem;color:#374151;font-weight:500;
+                                          transition:background .15s,border-color .15s;"
+                                   onmouseover="this.style.background='#f3f4f6';this.style.borderColor='#6b7280'"
+                                   onmouseout="this.style.background='#fff';this.style.borderColor='#9ca3af'">
+                                📎 Ajouter un scan
+                            </label>
+                            <input type="file"
+                                   th:id="'fmod-' + ${pf.id}"
+                                   name="file"
+                                   accept=".pdf,.jpg,.jpeg,.png,.tiff"
+                                   style="display:none;"
+                                   onchange="var lbl=this.previousElementSibling; lbl.textContent='⏳ Envoi…'; lbl.style.opacity='0.6'; this.form.submit();">
                         </form>
                     </div>
 
