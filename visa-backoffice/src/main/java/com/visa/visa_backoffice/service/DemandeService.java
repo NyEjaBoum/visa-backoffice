@@ -276,7 +276,7 @@ public Demande modifier(Integer id, DemandeForm form) {
 
         // --- ÉTAPE A : DEMANDE D'INJECTION (le passé) ---
         Demande demandeInj = new Demande();
-        demandeInj.setNumDemande(genererNumeroDossier() + "-INJ");
+        demandeInj.setNumDemande(genererNumeroDossier());
         demandeInj.setDemandeur(demandeur);
         demandeInj.setVisaTransformable(vt);
         // Type: Nouveau Titre (ID 1), Statut: VISA APPROUVE (ID 4)
@@ -304,10 +304,11 @@ public Demande modifier(Integer id, DemandeForm form) {
         demandeB = demandeRepository.save(demandeB);
 
         historiqueDemandeStatutService.creer(demandeB, demandeB.getStatut());
+        List<PieceJustificative> piecesB = pieceJustificativeService.findForTypeVisa(form.getTypeVisaId());
         pieceFournieService.creerChecklist(
                 demandeB,
-                pieceJustificativeService.findForTypeVisa(form.getTypeVisaId()),
-                form.getPiecesFourniesIds());
+                piecesB,
+                piecesB.stream().map(PieceJustificative::getId).toList());
 
         return demandeB;
     }
