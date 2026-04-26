@@ -1,3 +1,4 @@
+
 package com.visa.visa_backoffice.service;
 
 import com.visa.visa_backoffice.dto.DemandeForm;
@@ -12,7 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import org.springframework.transaction.annotation.Transactional;
+
 @Service
 @Transactional
 public class DemandeService {
@@ -78,58 +79,73 @@ public class DemandeService {
 
     @Transactional
     public Demande creer(DemandeForm form) {
-        // 1. Demandeur
-        Demandeur demandeur = new Demandeur();
-        demandeur.setNom(form.getNom());
-        demandeur.setPrenoms(form.getPrenoms());
-        demandeur.setNomJeuneFille(form.getNomJeuneFille());
-        demandeur.setDateNaissance(form.getDateNaissance());
-        demandeur.setProfession(form.getProfession());
-        demandeur.setAdresseMada(form.getAdresseMada());
-        demandeur.setContactMada(form.getContactMada());
-        if (form.getNationaliteId() != null)
-            demandeur.setNationalite(nationaliteService.findById(form.getNationaliteId()));
-        if (form.getSituationFamilialeId() != null)
-            demandeur.setSituationFamiliale(situationFamilialeService.findById(form.getSituationFamilialeId()));
-        demandeur = demandeurService.create(demandeur);
+        form.validateOrThrow();
 
-        // 2. Passeport
-        Passeport passeport = new Passeport();
-        passeport.setNumero(form.getNumeroPasseport());
-        passeport.setDateDelivrance(form.getDateDelivrance());
-        passeport.setDateExpiration(form.getDateExpiration());
-        passeport = passeportService.create(demandeur.getId(), passeport);
+        // --- 1. GESTION DU DEMANDEUR ---
+        Demandeur demandeur;
+        {
+            demandeur = (form.getDemandeurId() != null)
+                    ? demandeurService.findByIdOrThrow(form.getDemandeurId())
+                    : new Demandeur();
 
-        VisaTransformable visaTransformable = null;
-        String vtNum = form.getVisaTransformableNumero();
-        if (vtNum != null && !vtNum.isBlank()) {
-            visaTransformable = new VisaTransformable();
-            visaTransformable.setPasseport(passeport);
-            visaTransformable.setDemandeur(demandeur);
-            visaTransformable.setNumero(vtNum);
-            visaTransformable.setDateEntree(form.getVisaTransformableDateEntree());
-            visaTransformable.setLieuEntree(form.getVisaTransformableLieuEntree());
-            visaTransformable.setDateFinVisa(form.getVisaTransformableDateFinVisa());
-            visaTransformable = visaTransformableService.save(visaTransformable);
+            Nationalite nat = (form.getNationaliteId() != null) ? nationaliteService.findById(form.getNationaliteId()) : null;
+            SituationFamiliale sit = (form.getSituationFamilialeId() != null) ? situationFamilialeService.findById(form.getSituationFamilialeId()) : null;
+
+            demandeur.updateFromForm(form, nat, sit);
+            demandeur = demandeurService.create(demandeur);
         }
 
+        // --- 2. GESTION DU PASSEPORT ---
+        // On le traite pour s'assurer qu'il est à jour en base, rattaché au demandeur
+        Passeport passeport = passeportService.findByNumero(form.getNumeroPasseport()).orElse(null);
+        {
+            if (passeport != null) {
+                if (demandeur.getId() != null && passeport.getDemandeur() != null && !passeport.getDemandeur().getId().equals(demandeur.getId())) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Ce passeport appartient à un autre usager.");
+                }
+            } else {
+                passeport = new Passeport();
+            }
 
-        // 3. Demande
+            passeport.updateFromForm(form, demandeur);
+            passeport = passeportService.create(passeport);
+        }
+
+        // --- 3. GESTION DU VISA TRANSFORMABLE ---
+        VisaTransformable vt = null;
+        String vtNum = form.getVisaTransformableNumero();
+        if (vtNum != null && !vtNum.isBlank()) {
+            vt = visaTransformableService.findByNumero(vtNum).orElse(null);
+
+            if (vt != null) {
+                if (demandeur.getId() != null && vt.getDemandeur() != null && !vt.getDemandeur().getId().equals(demandeur.getId())) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Ce visa transformable appartient à un autre usager.");
+                }
+            } else {
+                vt = new VisaTransformable();
+            }
+
+            vt.updateFromForm(form, passeport, demandeur);
+            vt = visaTransformableService.save(vt); 
+        }
+
+        // --- 4. CRÉATION ET SAUVEGARDE DE LA DEMANDE ---
         Demande demande = new Demande();
-        demande.setNumDemande(genererNumeroDossier());
-        demande.setDemandeur(demandeur);
-        demande.setTypeVisa(typeVisaService.findById(form.getTypeVisaId()));
-        demande.setTypeDemande(typeDemandeService.findById(form.getTypeDemandeId()));
-        demande.setStatut(statutService.getStatutCree());
-        demande.setDateCreation(LocalDateTime.now());
-        demande.setVisaTransformable(visaTransformable);
-        demande = demandeRepository.save(demande);
+        {
+            demande.setNumDemande(genererNumeroDossier());
+            demande.setDemandeur(demandeur);
+            // SUPPRIMÉ : demande.setPasseport(passeport); 
+            demande.setVisaTransformable(vt);
+            demande.setTypeVisa(typeVisaService.findById(form.getTypeVisaId()));
+            demande.setTypeDemande(typeDemandeService.findById(form.getTypeDemandeId()));
+            demande.setStatut(statutService.getStatutCree());
+            demande.setDateCreation(LocalDateTime.now());
+            
+            demande = demandeRepository.save(demande);
+        }
 
-        
-
-        HistoriqueStatutDemande historique = historiqueDemandeStatutService.creer(demande, demande.getStatut());
-
-        // 4. Pièces justificatives
+        // --- 5. FINALISATION ---
+        historiqueDemandeStatutService.creer(demande, demande.getStatut());
         pieceFournieService.creerChecklist(
                 demande,
                 pieceJustificativeService.findForTypeVisa(form.getTypeVisaId()),
@@ -138,78 +154,73 @@ public class DemandeService {
         return demande;
     }
 
-    @Transactional
-    public Demande modifier(Integer id, DemandeForm form) {
-        Demande demande = findByIdOrThrow(id);
+@Transactional
+public Demande modifier(Integer id, DemandeForm form) {
+    form.validateOrThrow();
+    Demande demande = findByIdOrThrow(id);
+    Demandeur demandeur = demande.getDemandeur();
 
-        if (demande.getStatut() == null || !"CREE".equalsIgnoreCase(demande.getStatut().getLibelle())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification impossible : dossier déjà verrouillé");
+    // 1. MISE À JOUR DU DEMANDEUR
+    Nationalite nat = (form.getNationaliteId() != null) ? nationaliteService.findById(form.getNationaliteId()) : null;
+    SituationFamiliale sit = (form.getSituationFamilialeId() != null) ? situationFamilialeService.findById(form.getSituationFamilialeId()) : null;
+    demandeur.updateFromForm(form, nat, sit);
+    demandeur = demandeurService.create(demandeur);
+
+    // 2. GESTION INTELLIGENTE DU PASSEPORT
+    // On cherche si le demandeur en possède déjà un
+    Passeport passeport = passeportService.findByDemandeur(demandeur);
+
+    if (passeport == null) {
+        // S'il n'en a pas, on regarde si le numéro saisi n'appartient pas déjà à quelqu'un d'autre (rattrapage)
+        // Sinon, on instancie un nouveau Passeport
+        passeport = passeportService.findByNumero(form.getNumeroPasseport())
+                                     .orElse(new Passeport());
+
+        // Sécurité : si on a trouvé un passeport via le numéro, il doit appartenir à NOTRE demandeur
+        if (passeport.getId() != null && passeport.getDemandeur() != null 
+            && !passeport.getDemandeur().getId().equals(demandeur.getId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ce passeport appartient déjà à un autre usager.");
         }
-
-        // 1. Update Demandeur
-        Demandeur demandeur = demande.getDemandeur();
-        demandeur.setNom(form.getNom());
-        demandeur.setPrenoms(form.getPrenoms());
-        demandeur.setNomJeuneFille(form.getNomJeuneFille());
-        demandeur.setDateNaissance(form.getDateNaissance());
-        demandeur.setProfession(form.getProfession());
-        demandeur.setAdresseMada(form.getAdresseMada());
-        demandeur.setContactMada(form.getContactMada());
-        if (form.getNationaliteId() != null)
-            demandeur.setNationalite(nationaliteService.findById(form.getNationaliteId()));
-        if (form.getSituationFamilialeId() != null)
-            demandeur.setSituationFamiliale(situationFamilialeService.findById(form.getSituationFamilialeId()));
-        demandeurService.update(demandeur.getId(), demandeur);
-
-        // 2. Update Passeport
-        Passeport passeport = passeportService.findLastForDemandeur(demandeur.getId()).orElse(null);
-        if (passeport != null) {
-            passeport.setNumero(form.getNumeroPasseport());
-            passeport.setDateDelivrance(form.getDateDelivrance());
-            passeport.setDateExpiration(form.getDateExpiration());
-            passeportService.update(passeport.getId(), passeport);
-        }
-
-        VisaTransformable vt = visaTransformableService.findLastForDemandeur(demandeur.getId()).orElse(null);
-        String vtNum = form.getVisaTransformableNumero();
-        if (vtNum != null && !vtNum.isBlank()) {
-            if (vt != null) {
-                vt.setNumero(vtNum);
-                vt.setDateEntree(form.getVisaTransformableDateEntree());
-                vt.setLieuEntree(form.getVisaTransformableLieuEntree());
-                vt.setDateFinVisa(form.getVisaTransformableDateFinVisa());
-                vt = visaTransformableService.update(vt.getId(), vt);
-            } else {
-                vt = new VisaTransformable();
-                vt.setPasseport(passeport);
-                vt.setDemandeur(demandeur);
-                vt.setNumero(vtNum);
-                vt.setDateEntree(form.getVisaTransformableDateEntree());
-                vt.setLieuEntree(form.getVisaTransformableLieuEntree());
-                vt.setDateFinVisa(form.getVisaTransformableDateFinVisa());
-                vt = visaTransformableService.save(vt);
-            }
-            demande.setVisaTransformable(vt);
-        }
-
-        // HistoriqueStatutDemande historique = historiqueDemandeStatutService.findByIdOrThrow(demande.getHistoriqueStatutDemande().getId());
-        // historique.setDemande(demande);
-        // historique.setStatut(demande.getStatut());
-        // historiqueDemandeStatutService.update(historique.getId(), historique);
-
-        // 3. Update Demande
-        demande.setTypeVisa(typeVisaService.findById(form.getTypeVisaId()));
-        demande.setTypeDemande(typeDemandeService.findById(form.getTypeDemandeId()));
-        demande = demandeRepository.save(demande);
-
-        // 4. Update Pièces
-        pieceFournieService.updateChecklist(
-                demande,
-                pieceJustificativeService.findForTypeVisa(form.getTypeVisaId()),
-                form.getPiecesFourniesIds());
-
-        return demande;
     }
+    
+    // Mise à jour (ou création si c'était un new Passeport)
+    passeport.updateFromForm(form, demandeur);
+    passeport = passeportService.create(passeport);
+
+    // 3. GESTION INTELLIGENTE DU VISA TRANSFORMABLE
+    String vtNum = form.getVisaTransformableNumero();
+    if (vtNum != null && !vtNum.isBlank()) {
+        // On vérifie d'abord si le demandeur est déjà lié à un VT
+        VisaTransformable vt = visaTransformableService.findByDemandeur(demandeur);
+
+        if (vt == null) {
+            // Rattrapage par numéro ou création
+            vt = visaTransformableService.findByNumero(vtNum).orElse(new VisaTransformable());
+
+            if (vt.getId() != null && vt.getDemandeur() != null 
+                && !vt.getDemandeur().getId().equals(demandeur.getId())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Ce numéro de visa appartient déjà à un autre usager.");
+            }
+        }
+
+        vt.updateFromForm(form, passeport, demandeur);
+        vt = visaTransformableService.save(vt); 
+        demande.setVisaTransformable(vt);
+    }
+
+    // 4. MISE À JOUR DE LA DEMANDE
+    demande.setTypeVisa(typeVisaService.findById(form.getTypeVisaId()));
+    demande.setTypeDemande(typeDemandeService.findById(form.getTypeDemandeId()));
+    demande = demandeRepository.save(demande);
+
+    // 5. MISE À JOUR CHECKLIST
+    pieceFournieService.updateChecklist(
+            demande, 
+            pieceJustificativeService.findForTypeVisa(form.getTypeVisaId()), 
+            form.getPiecesFourniesIds());
+
+    return demande;
+}
 
     private String genererNumeroDossier() {
         int year = LocalDate.now().getYear();
