@@ -26,7 +26,20 @@
 
             <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}"></div>
 
-            <form th:action="${demandeId != null} ? @{/demandes/{id}/modifier(id=${demandeId})} : @{/demandes}"
+            <!-- Bouton mode rattrapage (nouvelle demande uniquement) -->
+            <div th:if="${demandeId == null}" style="margin-bottom:16px;">
+                <button type="button" id="toggleRattrapageBtn" class="btn btn-ghost"
+                        style="border:1px dashed var(--color-warning, #f59e0b);color:var(--color-warning,#b45309);">
+                    Sans données antérieures
+                </button>
+                <span id="rattrapageBadge" style="display:none;margin-left:12px;padding:4px 10px;
+                      background:#fef3c7;border-radius:6px;font-size:0.85rem;color:#92400e;font-weight:600;">
+                    Mode Rattrapage actif
+                </span>
+            </div>
+
+            <form id="demandeForm"
+                  th:action="${demandeId != null} ? @{/demandes/{id}/modifier(id=${demandeId})} : @{/demandes}"
                   th:object="${form}"
                   method="post">
 
@@ -198,8 +211,53 @@
                     </div>
                 </div>
 
+                <!-- Section Rattrapage — masquée par défaut -->
+                <div class="section" id="rattrapageSection" style="display:none;
+                     border:2px dashed var(--color-warning,#f59e0b);background:#fffbeb;">
+                    <h2 class="section-title" style="color:#92400e;">
+                        4. Antécédents à injecter <span style="font-size:0.8rem;font-weight:400;">(passé de l'usager)</span>
+                    </h2>
+                    <p class="page-subtitle" style="margin-bottom:12px;">
+                        Ces informations recréent le dossier historique de l'usager. Remplissez au moins un des deux blocs.
+                    </p>
+
+                    <h3 style="font-size:0.95rem;font-weight:600;color:#374151;margin:0 0 10px;">Carte de résident</h3>
+                    <div class="grid-2" style="margin-bottom:16px;">
+                        <div class="form-group">
+                            <label class="form-label" for="numeroCarteResident">Numéro carte de résident</label>
+                            <input type="text" id="numeroCarteResident" th:field="*{numeroCarteResident}"
+                                   class="form-input" placeholder="Ex : CR-2020-0042">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="dateDebutCarte">Date début carte</label>
+                            <input type="date" id="dateDebutCarte" th:field="*{dateDebutCarte}" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="dateFinCarte">Date fin carte</label>
+                            <input type="date" id="dateFinCarte" th:field="*{dateFinCarte}" class="form-input">
+                        </div>
+                    </div>
+
+                    <h3 style="font-size:0.95rem;font-weight:600;color:#374151;margin:0 0 10px;">Visa</h3>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label" for="numeroVisa">Numéro de visa</label>
+                            <input type="text" id="numeroVisa" th:field="*{numeroVisa}"
+                                   class="form-input" placeholder="Ex : VISA-2020-0099">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="dateDebutVisa">Date début visa</label>
+                            <input type="date" id="dateDebutVisa" th:field="*{dateDebutVisa}" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="dateFinVisa">Date fin visa</label>
+                            <input type="date" id="dateFinVisa" th:field="*{dateFinVisa}" class="form-input">
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Pièces justificatives (Sprint 1 : nouveau titre) -->
-<div class="section" id="piecesSection" 
+<div class="section" id="piecesSection"
      th:style="${form.typeDemandeId != null} ? 'display:block' : 'display:none'">
     
     <h2 class="section-title">4. Pièces justificatives fournies</h2>
@@ -242,6 +300,26 @@
 
 <script>
     (function () {
+        // ── Mode Rattrapage ──────────────────────────────────────────────────
+        const toggleBtn    = document.getElementById('toggleRattrapageBtn');
+        const badge        = document.getElementById('rattrapageBadge');
+        const rattrapageSection = document.getElementById('rattrapageSection');
+        const demandeForm  = document.getElementById('demandeForm');
+        const BASE_ACTION  = demandeForm ? demandeForm.getAttribute('action') : null;
+        const RATTRAPAGE_ACTION = '/demandes/rattrapage';
+        let rattrapageActif = false;
+
+        if (toggleBtn && demandeForm) {
+            toggleBtn.addEventListener('click', function () {
+                rattrapageActif = !rattrapageActif;
+                rattrapageSection.style.display = rattrapageActif ? 'block' : 'none';
+                badge.style.display            = rattrapageActif ? 'inline-block' : 'none';
+                demandeForm.action             = rattrapageActif ? RATTRAPAGE_ACTION : BASE_ACTION;
+                toggleBtn.style.background     = rattrapageActif ? '#fef3c7' : '';
+            });
+        }
+
+        // ── Autocomplete / Pré-remplissage ───────────────────────────────────
         const input = document.getElementById('prefillSearchInput');
         const list = document.getElementById('prefillAutocompleteList');
         const info = document.getElementById('prefillInfo');

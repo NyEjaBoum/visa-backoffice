@@ -129,6 +129,22 @@ public class DemandeController {
         }
     }
 
+    @PostMapping("/rattrapage")
+    public String creerSansDonneesAnterieur(@ModelAttribute("form") DemandeForm form,
+                                            RedirectAttributes redirectAttrs,
+                                            Model model) {
+        try {
+            Demande demande = demandeService.creerSansDonneesAnterieur(form);
+            redirectAttrs.addFlashAttribute("successMessage", "Demande créée avec succès (rattrapage). Numéro : " + demande.getNumDemande());
+            return "redirect:/demandes/" + demande.getId();
+        } catch (ResponseStatusException e) {
+            model.addAttribute("errorMessage", e.getReason());
+            chargerNomenclatures(model);
+            model.addAttribute("piecesJustificatives", pieceJustificativeService.findAll());
+            return "demandes/formulaire";
+        }
+    }
+
     // --- Gardé pour l'autocomplete (Recherche) ---
     @GetMapping("/antecedents/autocomplete")
     @ResponseBody
