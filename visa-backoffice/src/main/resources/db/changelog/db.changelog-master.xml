@@ -15,5 +15,6 @@
     <!-- ===== SPRINT 2 — Gestion des antecedents (rattrapage / duplicata / transfert) ===== -->
     <include file="sprint2/01_statut_visa_approuve.sql" relativeToChangelogFile="true"/>
     <include file="sprint2/02_view_dossier_complet.sql" relativeToChangelogFile="true"/>
+    <include file="sprint2/03_view_autocomplete_fix.sql" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

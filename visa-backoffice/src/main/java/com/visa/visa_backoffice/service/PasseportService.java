@@ -28,6 +28,13 @@ public class PasseportService {
         return passeportRepository.findAll();
     }
 
+    public Optional<Passeport> findByNumero(String numero) {
+        if (numero == null || numero.isBlank()) {
+            return Optional.empty();
+        }
+        return passeportRepository.findByNumero(numero.trim());
+    }
+
     @Transactional(readOnly = true)
     public Passeport findByIdOrThrow(Integer id) {
         return passeportRepository.findById(id)
@@ -42,9 +49,7 @@ public class PasseportService {
         return passeportRepository.findFirstByDemandeurIdOrderByIdDesc(demandeurId);
     }
 
-    public Passeport create(Integer demandeurId, Passeport passeport) {
-        Demandeur demandeur = demandeurService.findByIdOrThrow(demandeurId);
-        passeport.setDemandeur(demandeur);
+    public Passeport create(Passeport passeport) {
         return passeportRepository.save(passeport);
     }
 

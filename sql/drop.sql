@@ -1,54 +1,30 @@
--- Réinitialisation complète de la base visa_gestion (schéma dev uniquement)
--- À utiliser uniquement en développement !
+-- 1. Se positionner sur le bon schéma
+SET search_path TO dev;
 
-DROP TABLE IF EXISTS dev.databasechangelog CASCADE;
-DROP TABLE IF EXISTS dev.databasechangeloglock CASCADE;
+-- 2. Supprimer la vue si elle existe (pour éviter les blocages de dépendances)
+DROP VIEW IF EXISTS v_dossier_complet;
 
+-- 3. Supprimer toutes les tables du métier et des référentiels
+-- L'ordre importe peu avec CASCADE, mais on liste tout par sécurité
+DROP TABLE IF EXISTS piece_fournie CASCADE;
+DROP TABLE IF EXISTS piece_justificative CASCADE;
+DROP TABLE IF EXISTS historique_statut_demande CASCADE;
+DROP TABLE IF EXISTS visa CASCADE;
+DROP TABLE IF EXISTS carte_resident CASCADE;
+DROP TABLE IF EXISTS demande CASCADE;
+DROP TABLE IF EXISTS visa_transformable CASCADE;
+DROP TABLE IF EXISTS passeport CASCADE;
+DROP TABLE IF EXISTS demandeur CASCADE;
+DROP TABLE IF EXISTS statut CASCADE;
+DROP TABLE IF EXISTS type_demande CASCADE;
+DROP TABLE IF EXISTS type_visa CASCADE;
+DROP TABLE IF EXISTS situation_familiale CASCADE;
+DROP TABLE IF EXISTS nationalite CASCADE;
 
--- Tables "feuilles" (sans dépendants)
-DROP TABLE IF EXISTS dev.piece_fournie CASCADE;
-DROP TABLE IF EXISTS dev.carte_resident CASCADE;
-DROP TABLE IF EXISTS dev.visa CASCADE;
-DROP TABLE IF EXISTS dev.piece_justificative CASCADE;
+-- 4. Supprimer les tables de log de Liquibase (Le "cerveau" de Liquibase)
+-- Cela force Liquibase à croire que la base est neuve
+DROP TABLE IF EXISTS databasechangelog CASCADE;
+DROP TABLE IF EXISTS databasechangeloglock CASCADE;
 
--- Tables "liées"
-DROP TABLE IF EXISTS dev.demande_visa CASCADE;
-DROP TABLE IF EXISTS dev.visa_transformable CASCADE;
-DROP TABLE IF EXISTS dev.passeport CASCADE;
-DROP TABLE IF EXISTS dev.individu CASCADE;
-
--- Référentiels et utilisateurs
-DROP TABLE IF EXISTS dev.utilisateur CASCADE;
-DROP TABLE IF EXISTS dev.role_action CASCADE;
-DROP TABLE IF EXISTS dev.role CASCADE;
-DROP TABLE IF EXISTS dev.situation_familiale CASCADE;
-DROP TABLE IF EXISTS dev.type_visa CASCADE;
-DROP TABLE IF EXISTS dev.type_demande_visa CASCADE;
-DROP TABLE IF EXISTS dev.statut CASCADE;
-
-
--- Tables "feuilles" (sans dépendants)
-DROP TABLE IF EXISTS dev.piece_fournie CASCADE;
-DROP TABLE IF EXISTS dev.carte_resident CASCADE;
-DROP TABLE IF EXISTS dev.visa CASCADE;
-
--- Tables "liées"
-DROP TABLE IF EXISTS dev.demande_visa CASCADE;
-DROP TABLE IF EXISTS dev.visa_transformable CASCADE;
-DROP TABLE IF EXISTS dev.passeport CASCADE;
-DROP TABLE IF EXISTS dev.individu CASCADE;
-
--- Référentiels et utilisateurs
-DROP TABLE IF EXISTS dev.utilisateur CASCADE;
-DROP TABLE IF EXISTS dev.role_action CASCADE;
-DROP TABLE IF EXISTS dev.role CASCADE;
-DROP TABLE IF EXISTS dev.situation_familiale CASCADE;
-DROP TABLE IF EXISTS dev.type_visa CASCADE;
-DROP TABLE IF EXISTS dev.type_demande_visa CASCADE;
-DROP TABLE IF EXISTS dev.statut CASCADE;
-
--- Tu peux ajouter d'autres DROP TABLE si tu ajoutes de nouvelles tables
-
--- Optionnel : recréer le schéma dev si besoin
--- DROP SCHEMA IF EXISTS dev CASCADE;
--- CREATE SCHEMA dev;
+-- 5. Optionnel : Nettoyer les séquences si tu n'as pas utilisé SERIAL partout
+-- DROP SEQUENCE IF EXISTS ...
