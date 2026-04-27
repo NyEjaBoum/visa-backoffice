@@ -13,7 +13,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -82,21 +83,28 @@ public class DemandeService {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // CAS NORMAL — CRÉATION
-    // Le controller construit des stubs (non persistés) et délègue tout ici.
+    // CRÉATION (Moteur universel)
     // ─────────────────────────────────────────────────────────────────────────
 
     @Transactional
-    public Demande createComplet(Demandeur demandeurStub, Passeport passeportStub, VisaTransformable vtStub,
-                                  TypeVisa typeVisa, TypeDemande typeDemande,
-                                  List<Integer> piecesFourniesIds) {
-        Demandeur demandeur = demandeurStub.getId() != null
+    public Demande createComplet(Demandeur demandeurStub,
+                                 Passeport passeportStub,
+                                 VisaTransformable vtStub,
+                                 TypeVisa typeVisa,
+                                 TypeDemande typeDemande,
+                                 List<Integer> piecesFourniesIds,
+                                 Statut statutInitial) {
+
+        // 1. Gérer le demandeur (création ou récupération si ID présent)
+        Demandeur demandeur = (demandeurStub.getId() != null) 
                 ? demandeurService.update(demandeurStub.getId(), demandeurStub)
                 : demandeurService.create(demandeurStub);
 
+        // 2. Gérer le passeport
         passeportStub.setDemandeur(demandeur);
         Passeport passeport = passeportService.create(passeportStub, demandeur);
 
+        // 3. Gérer le Visa Transformable
         VisaTransformable vt = null;
         if (vtStub != null) {
             vtStub.setDemandeur(demandeur);
@@ -104,41 +112,60 @@ public class DemandeService {
             vt = visaTransformableService.create(vtStub, demandeur);
         }
 
+        // 4. Créer la demande
         Demande demande = new Demande();
         demande.setNumDemande(genererNumeroDossier());
+        if (demande.getQrToken() == null) {
+            demande.setQrToken(UUID.randomUUID());
+        }
         demande.setDemandeur(demandeur);
         demande.setVisaTransformable(vt);
         demande.setTypeVisa(typeVisa);
         demande.setTypeDemande(typeDemande);
-        demande.setStatut(statutService.getStatutCree());
+        demande.setStatut(statutInitial);
         demande.setDateCreation(LocalDateTime.now());
+        
         demande = demandeRepository.save(demande);
 
-        historiqueDemandeStatutService.creer(demande, demande.getStatut());
+        // 5. Historique & Checklist
+        historiqueDemandeStatutService.creer(demande, statutInitial);
+
         pieceFournieService.creerChecklist(
                 demande,
                 pieceJustificativeService.findForTypeVisa(typeVisa.getId()),
-                piecesFourniesIds);
+                piecesFourniesIds
+        );
 
         return demande;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // CAS NORMAL — MODIFICATION
+    // MODIFICATION (Unique porte d'entrée pour les mises à jour)
     // ─────────────────────────────────────────────────────────────────────────
 
     @Transactional
-    public Demande updateComplet(Integer demandeId, Demandeur demandeurStub, Passeport passeportStub,
-                                  VisaTransformable vtStub, TypeVisa typeVisa, TypeDemande typeDemande,
-                                  List<Integer> piecesFourniesIds) {
-        Demande demande = findByIdOrThrow(demandeId);
+    public Demande updateComplet(Demande demande,
+                                 Demandeur demandeurStub,
+                                 Passeport passeportStub,
+                                 VisaTransformable vtStub,
+                                 TypeVisa typeVisa,
+                                 TypeDemande typeDemande,
+                                 List<Integer> piecesFourniesIds,
+                                 Statut nouveauStatut) {
+
+        if (demande == null || demande.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Demande obligatoire.");
+        }
         verifierModifiable(demande);
 
+        // Mise à jour du demandeur lié
         Demandeur demandeur = demandeurService.update(demande.getDemandeur().getId(), demandeurStub);
 
+        // Mise à jour/Recréation du passeport
         passeportStub.setDemandeur(demandeur);
         Passeport passeport = passeportService.create(passeportStub, demandeur);
 
+        // Mise à jour du VT
         VisaTransformable vt = null;
         if (vtStub != null) {
             vtStub.setDemandeur(demandeur);
@@ -146,131 +173,107 @@ public class DemandeService {
             vt = visaTransformableService.create(vtStub, demandeur);
         }
 
+        // Update des champs demande
+        demande.setDemandeur(demandeur);
         demande.setVisaTransformable(vt);
         demande.setTypeVisa(typeVisa);
         demande.setTypeDemande(typeDemande);
+
+        if (nouveauStatut != null) {
+            demande.setStatut(nouveauStatut);
+        }
+
         demande = demandeRepository.save(demande);
 
+        // Sync checklist
         pieceFournieService.updateChecklist(
                 demande,
                 pieceJustificativeService.findForTypeVisa(typeVisa.getId()),
-                piecesFourniesIds);
+                piecesFourniesIds
+        );
+
+        if (nouveauStatut != null) {
+            historiqueDemandeStatutService.creer(demande, nouveauStatut);
+        }
 
         return demande;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // CAS RATTRAPAGE — SANS DONNÉES ANTÉRIEURES
+    // CAS RATTRAPAGE (Orchestration utilisant createComplet)
     // ─────────────────────────────────────────────────────────────────────────
 
     @Transactional
     public Demande createRattrapageComplet(Demandeur demandeurStub, Passeport passeportStub, VisaTransformable vtStub,
-                                            TypeVisa typeVisa, TypeDemande typeDemande,
-                                            TypeDemande typeDemandeInjection,
-                                            Visa visaInjecteStub, CarteResident carteInjecteeStub) {
-        Demandeur demandeur = demandeurStub.getId() != null
-                ? demandeurService.update(demandeurStub.getId(), demandeurStub)
-                : demandeurService.create(demandeurStub);
+                                           TypeVisa typeVisa, TypeDemande typeDemandeCible,
+                                           TypeDemande typeDemandeInjection,
+                                           Visa visaInjecteStub, CarteResident carteInjecteeStub) {
 
-        passeportStub.setDemandeur(demandeur);
-        Passeport passeport = passeportService.create(passeportStub, demandeur);
+        // ÉTAPE A : Création du passé (Dossier Injection)
+        // On force toutes les pièces comme "fournies" pour l'injection
+        List<Integer> allPiecesIds = pieceJustificativeService.findForTypeVisa(typeVisa.getId())
+                .stream().map(PieceJustificative::getId).toList();
 
-        VisaTransformable vt = null;
-        if (vtStub != null) {
-            vtStub.setDemandeur(demandeur);
-            vtStub.setPasseport(passeport);
-            vt = visaTransformableService.create(vtStub, demandeur);
-        }
+        Demande demandeInj = createComplet(
+                demandeurStub, passeportStub, vtStub, typeVisa, 
+                typeDemandeInjection, allPiecesIds, statutService.getStatutVisaApprouve()
+        );
 
-        if (visaInjecteStub != null) visaInjecteStub.setPasseport(passeport);
-        if (carteInjecteeStub != null) carteInjecteeStub.setPasseport(passeport);
-
-        // ÉTAPE A : demande d'injection (le passé — statut VISA APPROUVE)
-        Demande demandeInj = new Demande();
-        demandeInj.setNumDemande(genererNumeroDossier());
-        demandeInj.setDemandeur(demandeur);
-        demandeInj.setVisaTransformable(vt);
-        demandeInj.setTypeDemande(typeDemandeInjection);
-        demandeInj.setTypeVisa(typeVisa);
-        demandeInj.setStatut(statutService.getStatutVisaApprouve());
-        demandeInj.setDateCreation(LocalDateTime.now());
-        demandeInj = demandeRepository.save(demandeInj);
-        historiqueDemandeStatutService.creer(demandeInj, demandeInj.getStatut());
-
+        // Liaison des documents physiques à l'injection
         if (visaInjecteStub != null) {
             visaInjecteStub.setDemande(demandeInj);
+            visaInjecteStub.setPasseport(demandeInj.getVisaTransformable().getPasseport());
             visaRepository.save(visaInjecteStub);
         }
         if (carteInjecteeStub != null) {
             carteInjecteeStub.setDemande(demandeInj);
+            carteInjecteeStub.setPasseport(demandeInj.getVisaTransformable().getPasseport());
             carteResidentRepository.save(carteInjecteeStub);
         }
 
-        // ÉTAPE B : demande cible (le présent — statut CREE)
-        Demande demandeB = new Demande();
-        demandeB.setNumDemande(genererNumeroDossier());
-        demandeB.setDemandeur(demandeur);
-        demandeB.setVisaTransformable(vt);
-        demandeB.setTypeVisa(typeVisa);
-        demandeB.setTypeDemande(typeDemande);
-        demandeB.setStatut(statutService.getStatutCree());
-        demandeB.setDateCreation(LocalDateTime.now());
-        demandeB = demandeRepository.save(demandeB);
-        historiqueDemandeStatutService.creer(demandeB, demandeB.getStatut());
-
-        List<PieceJustificative> piecesB = pieceJustificativeService.findForTypeVisa(typeVisa.getId());
-        pieceFournieService.creerChecklist(
-                demandeB,
-                piecesB,
-                piecesB.stream().map(PieceJustificative::getId).toList());
-
-        return demandeB;
+        // ÉTAPE B : Création du présent (Dossier Cible)
+        // On repart du demandeur/passeport/VT créés à l'étape A pour éviter les doublons
+        return createComplet(
+                demandeInj.getDemandeur(),
+                demandeInj.getVisaTransformable().getPasseport(),
+                demandeInj.getVisaTransformable(),
+                typeVisa,
+                typeDemandeCible,
+                allPiecesIds, // Par défaut tout coché en rattrapage
+                statutService.getStatutCree()
+        );
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // SPRINT 3 — FINALISATION DU SCAN
+    // FINALISATION SCAN
     // ─────────────────────────────────────────────────────────────────────────
 
     @Transactional
-    public Demande finaliserScan(Integer demandeId) {
-        Demande demande = findByIdOrThrow(demandeId);
-        verifierModifiable(demande);
-
-        List<PieceFournie> toutesLesPieces = pieceFournieRepository.findAllForDemande(demandeId);
-
-        if (toutesLesPieces.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Aucune pièce justificative configurée pour ce dossier.");
+    public Demande finaliserScan(Demande demande, Demandeur demandeurStub, Passeport passeportStub,
+                                 VisaTransformable vtStub, TypeVisa typeVisa, TypeDemande typeDemande,
+                                 List<Integer> piecesFourniesIds) {
+        
+        // 1. Validations métier avant délégation
+        List<PieceJustificative> piecesAttendues = pieceJustificativeService.findForTypeVisa(typeVisa.getId());
+        
+        // (Logique de vérification des fichiers scannés...)
+        List<PieceFournie> existantes = pieceFournieRepository.findAllForDemande(demande.getId());
+        if (!pieceFichierService.toutesLesPiecesOntUnFichier(existantes)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fichiers manquants.");
         }
 
-        boolean toutesPresentes = toutesLesPieces.stream()
-                .allMatch(pf -> Boolean.TRUE.equals(pf.getIsPresent()));
-        if (!toutesPresentes) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Toutes les pièces justificatives doivent être cochées avant la finalisation.");
-        }
-
-        if (!pieceFichierService.toutesLesPiecesOntUnFichier(toutesLesPieces)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Toutes les pièces justificatives doivent avoir au moins un fichier scanné avant la finalisation.");
-        }
-
-        demande.setStatut(statutService.getStatutScanTermine());
-        demande = demandeRepository.save(demande);
-        historiqueDemandeStatutService.creer(demande, demande.getStatut());
-
-        return demande;
+        // 2. Délégation à l'update unique
+        return updateComplet(demande, demandeurStub, passeportStub, vtStub, typeVisa, 
+                            typeDemande, piecesFourniesIds, statutService.getStatutScanTermine());
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // HELPERS PRIVÉS
+    // HELPERS
     // ─────────────────────────────────────────────────────────────────────────
 
     private void verifierModifiable(Demande demande) {
-        String statut = demande.getStatut() != null ? demande.getStatut().getLibelle() : "";
-        if ("SCAN TERMINÉ".equalsIgnoreCase(statut)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Ce dossier est finalisé (SCAN TERMINÉ) et ne peut plus être modifié.");
+        if ("SCAN TERMINÉ".equalsIgnoreCase(demande.getStatut().getLibelle())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Dossier verrouillé.");
         }
     }
 
@@ -280,10 +283,10 @@ public class DemandeService {
         int next = demandeRepository
                 .findTopByNumDemandeStartingWithOrderByNumDemandeDesc(prefix)
                 .map(d -> {
-                    try { return Integer.parseInt(d.getNumDemande().substring(prefix.length())); }
-                    catch (NumberFormatException e) { return 0; }
-                })
-                .orElse(0) + 1;
+                    try {
+                        return Integer.parseInt(d.getNumDemande().substring(prefix.length()));
+                    } catch (Exception e) { return 0; }
+                }).orElse(0) + 1;
         return prefix + String.format("%04d", next);
     }
 }

@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "demande")
@@ -16,6 +17,9 @@ public class Demande {
 
     @Column(name = "numero", unique = true, nullable = false)
     private String numDemande;
+
+    @Column(name = "qr_token", nullable = false)
+    private UUID qrToken;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_demandeur")
@@ -54,6 +58,9 @@ public class Demande {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le numéro de demande est obligatoire");
         }
     }
+
+    public UUID getQrToken() { return qrToken; }
+    public void setQrToken(UUID qrToken) { this.qrToken = qrToken; }
 
     public Demandeur getDemandeur() { return demandeur; }
     public void setDemandeur(Demandeur demandeur) {

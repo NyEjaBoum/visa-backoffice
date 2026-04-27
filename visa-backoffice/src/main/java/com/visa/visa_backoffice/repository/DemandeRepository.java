@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface DemandeRepository extends JpaRepository<Demande, Integer> {
 
@@ -33,4 +34,10 @@ public interface DemandeRepository extends JpaRepository<Demande, Integer> {
     List<Demande> findAllWithRefs();
 
     Optional<Demande> findTopByNumDemandeStartingWithOrderByNumDemandeDesc(String prefix);
+
+        Optional<Demande> findByQrToken(UUID qrToken);
+
+        Optional<Demande> findByNumDemande(String numDemande);
+
+        Optional<Demande> findTopByDemandeur_IdOrderByDateCreationDesc(Integer demandeurId);
 }

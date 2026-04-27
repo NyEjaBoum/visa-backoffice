@@ -23,4 +23,8 @@
     <!-- ===== SPRINT 3 — Scan des pièces & verrouillage du dossier ===== -->
     <include file="sprint3/01_sprint3_scan.sql" relativeToChangelogFile="true"/>
 
+    <!-- ===== SPRINT 4 — Suivi usager via QR Code (API publique) ===== -->
+    <include file="sprint4/01_sprint4_qr_token.sql" relativeToChangelogFile="true"/>
+    <include file="sprint4/02_sprint4_view_suivi_demande.sql" relativeToChangelogFile="true"/>
+
 </databaseChangeLog>

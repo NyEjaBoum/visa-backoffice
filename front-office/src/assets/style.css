@@ -1,0 +1,25 @@
+:root {
+  --primary-blue: #1570B0;
+  --text-dark: #1a1a1a;
+  --text-gray: #667085;
+  --border-color: #D0D5DD;
+  --danger-red: #d32f2f;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f1f3f6;
+  margin: 0;
+  min-height: 100vh;
+}
+
+#app {
+  width: 100%;
+  min-height: 100vh;
+}
