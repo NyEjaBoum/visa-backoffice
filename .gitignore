@@ -36,6 +36,12 @@ build/
 visa-backoffice/src/main/resources/application.properties
 
 # Frontend
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
 visa-frontend/node_modules/
 visa-frontend/dist/
 visa-frontend/.env.local
