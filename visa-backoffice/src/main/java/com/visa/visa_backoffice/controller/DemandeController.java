@@ -38,18 +38,21 @@ public class DemandeController {
     private final PieceJustificativeService pieceJustificativeService;
     private final PieceFichierService pieceFichierService;
     private final PdfService pdfService;
+    private final StatutService statutService;
 
     @Value("${app.upload.dir:./uploads}")
     private String uploadDir;
 
     public DemandeController(DemandeService demandeService,
-                             NomenclatureService nomenclatureService,
-                             PasseportService passeportService,
-                             PieceFournieService pieceFournieService,
-                             PieceJustificativeService pieceJustificativeService,
-                             PieceFichierService pieceFichierService,
-                             PdfService pdfService) {
+                            StatutService statutService,
+                            NomenclatureService nomenclatureService,
+                            PasseportService passeportService,
+                            PieceFournieService pieceFournieService,
+                            PieceJustificativeService pieceJustificativeService,
+                            PieceFichierService pieceFichierService,
+                            PdfService pdfService) {
         this.demandeService = demandeService;
+        this.statutService = statutService;
         this.nomenclatureService = nomenclatureService;
         this.passeportService = passeportService;
         this.pieceFournieService = pieceFournieService;
@@ -94,7 +97,9 @@ public class DemandeController {
                     construireVT(form),
                     nomenclatureService.findTypeVisa(form.getTypeVisaId()),
                     nomenclatureService.findTypeDemande(form.getTypeDemandeId()),
-                    form.getPiecesFourniesIds());
+                    form.getPiecesFourniesIds(),
+                    statutService.getStatutCree()
+            );
 
             if (request instanceof MultipartHttpServletRequest mReq) {
                 uploadFichiersCreation(demande.getId(), mReq.getFileMap(), redirectAttrs);
@@ -222,14 +227,18 @@ public class DemandeController {
         try {
             form.validateOrThrow();
 
+            Demande demande = demandeService.findByIdOrThrow(id);
+
             demandeService.updateComplet(
-                    id,
+                    demande,
                     construireDemandeur(form),
                     construirePasseport(form),
                     construireVT(form),
                     nomenclatureService.findTypeVisa(form.getTypeVisaId()),
                     nomenclatureService.findTypeDemande(form.getTypeDemandeId()),
-                    form.getPiecesFourniesIds());
+                    form.getPiecesFourniesIds(),
+                    null
+            );
 
             redirectAttrs.addFlashAttribute("successMessage", "Demande mise à jour avec succès.");
             return "redirect:/demandes/" + id;
@@ -300,15 +309,38 @@ public class DemandeController {
     // ─────────────────────────────────────────────────────────────────────────
 
     @PostMapping("/{id}/finaliser-scan")
-    public String finaliserScan(@PathVariable Integer id, RedirectAttributes redirectAttrs) {
+    public String finaliserScan(@PathVariable Integer id,
+                                @ModelAttribute("form") DemandeForm form,
+                                RedirectAttributes redirectAttrs,
+                                Model model) {
         try {
-            demandeService.finaliserScan(id);
+            form.validateOrThrow();
+
+            Demande demande = demandeService.findByIdOrThrow(id);
+
+            demandeService.finaliserScan(
+                    demande,
+                    construireDemandeur(form),
+                    construirePasseport(form),
+                    construireVT(form),
+                    nomenclatureService.findTypeVisa(form.getTypeVisaId()),
+                    nomenclatureService.findTypeDemande(form.getTypeDemandeId()),
+                    form.getPiecesFourniesIds()
+            );
+
             redirectAttrs.addFlashAttribute("successMessage",
                     "Scan finalisé ! Le dossier est désormais verrouillé en lecture seule.");
+            return "redirect:/demandes/" + id;
+
         } catch (ResponseStatusException e) {
-            redirectAttrs.addFlashAttribute("errorMessage", e.getReason());
+            model.addAttribute("errorMessage", e.getReason());
+            model.addAttribute("demandeId", id);
+            chargerNomenclatures(model);
+            model.addAttribute("piecesJustificatives",
+                    pieceJustificativeService.findForTypeVisa(form.getTypeVisaId()));
+            chargerDonneesUpload(id, model);
+            return "demandes/formulaire";
         }
-        return "redirect:/demandes/" + id;
     }
 
     @GetMapping("/{id}/recepisse.pdf")

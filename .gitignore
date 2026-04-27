@@ -39,3 +39,8 @@ visa-backoffice/src/main/resources/application.properties
 visa-frontend/node_modules/
 visa-frontend/dist/
 visa-frontend/.env.local
+
+# Front-office (public tracking)
+front-office/node_modules/
+front-office/dist/
+front-office/.env.local

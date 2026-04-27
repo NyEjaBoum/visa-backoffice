@@ -74,6 +74,12 @@ public class DemandeForm {
         requireNotBlank(numeroPasseport, "Le numéro de passeport est obligatoire");
         requireNotNull(typeVisaId, "Le type de visa est obligatoire");
         requireNotNull(typeDemandeId, "Le type de demande est obligatoire");
+
+            // Visa transformable obligatoire
+        requireNotBlank(visaTransformableNumero, "La référence du visa transformable est obligatoire");
+        requireNotNull(visaTransformableDateEntree, "La date d'entrée du visa transformable est obligatoire");
+        requireNotBlank(visaTransformableLieuEntree, "Le lieu d'entrée du visa transformable est obligatoire");
+        requireNotNull(visaTransformableDateFinVisa, "La date de fin du visa transformable est obligatoire");
     }
 
     private void requireNotBlank(String value, String message) {
