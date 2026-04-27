@@ -16,11 +16,9 @@ import java.util.Optional;
 public class PasseportService {
 
     private final PasseportRepository passeportRepository;
-    private final DemandeurService demandeurService;
 
-    public PasseportService(PasseportRepository passeportRepository, DemandeurService demandeurService) {
+    public PasseportService(PasseportRepository passeportRepository) {
         this.passeportRepository = passeportRepository;
-        this.demandeurService = demandeurService;
     }
 
     @Transactional(readOnly = true)
@@ -28,10 +26,9 @@ public class PasseportService {
         return passeportRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public Optional<Passeport> findByNumero(String numero) {
-        if (numero == null || numero.isBlank()) {
-            return Optional.empty();
-        }
+        if (numero == null || numero.isBlank()) return Optional.empty();
         return passeportRepository.findByNumero(numero.trim());
     }
 
@@ -43,18 +40,30 @@ public class PasseportService {
 
     @Transactional(readOnly = true)
     public Optional<Passeport> findLastForDemandeur(Integer demandeurId) {
-        if (demandeurId == null) {
-            return Optional.empty();
-        }
+        if (demandeurId == null) return Optional.empty();
         return passeportRepository.findFirstByDemandeurIdOrderByIdDesc(demandeurId);
     }
 
-public Passeport findByDemandeur(Demandeur demandeur) {
-    // Même chose ici
-    return findLastForDemandeur(demandeur.getId()).orElse(null);
-}
+    public Passeport findByDemandeur(Demandeur demandeur) {
+        return findLastForDemandeur(demandeur.getId()).orElse(null);
+    }
 
-    public Passeport create(Passeport passeport) {
+    /**
+     * Sauvegarde un passeport en vérifiant qu'il n'appartient pas à un autre demandeur.
+     * Si le numéro existe déjà pour le même demandeur, l'enregistrement est réutilisé.
+     */
+    public Passeport create(Passeport passeport, Demandeur owner) {
+        if (passeport.getId() == null) {
+            Passeport existing = findByNumero(passeport.getNumero()).orElse(null);
+            if (existing != null) {
+                if (existing.getDemandeur() != null
+                        && !existing.getDemandeur().getId().equals(owner.getId())) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT,
+                            "Ce passeport appartient déjà à un autre usager.");
+                }
+                passeport.setId(existing.getId());
+            }
+        }
         return passeportRepository.save(passeport);
     }
 

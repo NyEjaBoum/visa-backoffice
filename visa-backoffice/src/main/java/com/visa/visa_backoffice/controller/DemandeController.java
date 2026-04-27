@@ -1,10 +1,7 @@
 package com.visa.visa_backoffice.controller;
 
 import com.visa.visa_backoffice.dto.DemandeForm;
-import com.visa.visa_backoffice.model.Demande;
-import com.visa.visa_backoffice.model.DossierComplet;
-import com.visa.visa_backoffice.model.Passeport;
-import com.visa.visa_backoffice.model.PieceFournie;
+import com.visa.visa_backoffice.model.*;
 import com.visa.visa_backoffice.service.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -79,19 +76,34 @@ public class DemandeController {
         return "demandes/formulaire";
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // CAS NORMAL — CRÉATION
+    // ─────────────────────────────────────────────────────────────────────────
+
     @PostMapping
     public String creer(@ModelAttribute("form") DemandeForm form,
                         HttpServletRequest request,
                         RedirectAttributes redirectAttrs,
                         Model model) {
         try {
-            Demande demande = demandeService.creer(form);
+            form.validateOrThrow();
+
+            Demande demande = demandeService.createComplet(
+                    construireDemandeur(form),
+                    construirePasseport(form),
+                    construireVT(form),
+                    nomenclatureService.findTypeVisa(form.getTypeVisaId()),
+                    nomenclatureService.findTypeDemande(form.getTypeDemandeId()),
+                    form.getPiecesFourniesIds());
+
             if (request instanceof MultipartHttpServletRequest mReq) {
                 uploadFichiersCreation(demande.getId(), mReq.getFileMap(), redirectAttrs);
             }
+
             redirectAttrs.addFlashAttribute("successMessage",
                     "Demande créée avec succès. Numéro : " + demande.getNumDemande());
             return "redirect:/demandes/" + demande.getId();
+
         } catch (ResponseStatusException e) {
             model.addAttribute("errorMessage", e.getReason());
             chargerNomenclatures(model);
@@ -100,19 +112,36 @@ public class DemandeController {
         }
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // CAS RATTRAPAGE — SANS DONNÉES ANTÉRIEURES
+    // ─────────────────────────────────────────────────────────────────────────
+
     @PostMapping("/rattrapage")
-    public String creerSansDonneesAnterieur(@ModelAttribute("form") DemandeForm form,
-                                            HttpServletRequest request,
-                                            RedirectAttributes redirectAttrs,
-                                            Model model) {
+    public String creerRattrapage(@ModelAttribute("form") DemandeForm form,
+                                  HttpServletRequest request,
+                                  RedirectAttributes redirectAttrs,
+                                  Model model) {
         try {
-            Demande demande = demandeService.creerSansDonneesAnterieur(form);
+            form.validateOrThrow();
+
+            Demande demande = demandeService.createRattrapageComplet(
+                    construireDemandeur(form),
+                    construirePasseport(form),
+                    construireVT(form),
+                    nomenclatureService.findTypeVisa(form.getTypeVisaId()),
+                    nomenclatureService.findTypeDemande(form.getTypeDemandeId()),
+                    nomenclatureService.findTypeDemandeNouveauTitre(),
+                    construireVisaInjecte(form),
+                    construireCarteInjectee(form));
+
             if (request instanceof MultipartHttpServletRequest mReq) {
                 uploadFichiersCreation(demande.getId(), mReq.getFileMap(), redirectAttrs);
             }
+
             redirectAttrs.addFlashAttribute("successMessage",
                     "Demande créée avec succès (rattrapage). Numéro : " + demande.getNumDemande());
             return "redirect:/demandes/" + demande.getId();
+
         } catch (ResponseStatusException e) {
             model.addAttribute("errorMessage", e.getReason());
             chargerNomenclatures(model);
@@ -138,7 +167,6 @@ public class DemandeController {
         List<PieceFournie> piecesFournies = pieceFournieService.findAllForDemande(id);
         model.addAttribute("piecesFournies", piecesFournies);
 
-        // Pour chaque pièce fournie, charger ses fichiers scannés
         Map<Integer, List<?>> fichiersByPiece = new LinkedHashMap<>();
         for (PieceFournie pf : piecesFournies) {
             fichiersByPiece.put(pf.getId(), pieceFichierService.findByPieceFournieId(pf.getId()));
@@ -192,14 +220,26 @@ public class DemandeController {
                            RedirectAttributes redirectAttrs,
                            Model model) {
         try {
-            demandeService.modifier(id, form);
+            form.validateOrThrow();
+
+            demandeService.updateComplet(
+                    id,
+                    construireDemandeur(form),
+                    construirePasseport(form),
+                    construireVT(form),
+                    nomenclatureService.findTypeVisa(form.getTypeVisaId()),
+                    nomenclatureService.findTypeDemande(form.getTypeDemandeId()),
+                    form.getPiecesFourniesIds());
+
             redirectAttrs.addFlashAttribute("successMessage", "Demande mise à jour avec succès.");
             return "redirect:/demandes/" + id;
+
         } catch (ResponseStatusException e) {
             model.addAttribute("errorMessage", e.getReason());
             model.addAttribute("demandeId", id);
             chargerNomenclatures(model);
-            model.addAttribute("piecesJustificatives", pieceJustificativeService.findForTypeVisa(form.getTypeVisaId()));
+            model.addAttribute("piecesJustificatives",
+                    pieceJustificativeService.findForTypeVisa(form.getTypeVisaId()));
             chargerDonneesUpload(id, model);
             return "demandes/formulaire";
         }
@@ -332,8 +372,64 @@ public class DemandeController {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // UTILITAIRES
+    // HELPERS PRIVÉS — Construction de stubs (non persistés) depuis le formulaire
     // ─────────────────────────────────────────────────────────────────────────
+
+    private Demandeur construireDemandeur(DemandeForm form) {
+        Demandeur d = new Demandeur();
+        if (form.getDemandeurId() != null) d.setId(form.getDemandeurId());
+        d.setNom(form.getNom());
+        d.setPrenoms(form.getPrenoms());
+        d.setNomJeuneFille(form.getNomJeuneFille());
+        d.setDateNaissance(form.getDateNaissance());
+        d.setProfession(form.getProfession());
+        d.setAdresseMada(form.getAdresseMada());
+        d.setContactMada(form.getContactMada());
+        if (form.getNationaliteId() != null)
+            d.setNationalite(nomenclatureService.findNationalite(form.getNationaliteId()));
+        if (form.getSituationFamilialeId() != null)
+            d.setSituationFamiliale(nomenclatureService.findSituationFamiliale(form.getSituationFamilialeId()));
+        return d;
+    }
+
+    private Passeport construirePasseport(DemandeForm form) {
+        Passeport p = new Passeport();
+        p.setNumero(form.getNumeroPasseport());
+        p.setDateDelivrance(form.getDateDelivrance());
+        p.setDateExpiration(form.getDateExpiration());
+        return p;
+    }
+
+    private VisaTransformable construireVT(DemandeForm form) {
+        String num = form.getVisaTransformableNumero();
+        if (num == null || num.isBlank()) return null;
+        VisaTransformable vt = new VisaTransformable();
+        vt.setNumero(num.trim());
+        vt.setDateEntree(form.getVisaTransformableDateEntree());
+        vt.setLieuEntree(form.getVisaTransformableLieuEntree());
+        vt.setDateFinVisa(form.getVisaTransformableDateFinVisa());
+        return vt;
+    }
+
+    private Visa construireVisaInjecte(DemandeForm form) {
+        if (form.getNumeroVisa() == null || form.getDateDebutVisa() == null || form.getDateFinVisa() == null)
+            return null;
+        Visa visa = new Visa();
+        visa.setNumero(form.getNumeroVisa());
+        visa.setDateDebut(form.getDateDebutVisa());
+        visa.setDateFin(form.getDateFinVisa());
+        return visa;
+    }
+
+    private CarteResident construireCarteInjectee(DemandeForm form) {
+        if (form.getNumeroCarteResident() == null || form.getDateDebutCarte() == null || form.getDateFinCarte() == null)
+            return null;
+        CarteResident carte = new CarteResident();
+        carte.setNumero(form.getNumeroCarteResident());
+        carte.setDateDebut(form.getDateDebutCarte());
+        carte.setDateFin(form.getDateFinCarte());
+        return carte;
+    }
 
     private void chargerDonneesUpload(Integer demandeId, Model model) {
         List<PieceFournie> piecesFournies = pieceFournieService.findAllForDemande(demandeId);
@@ -346,8 +442,8 @@ public class DemandeController {
     }
 
     private void uploadFichiersCreation(Integer demandeId,
-                                         Map<String, MultipartFile> fileMap,
-                                         RedirectAttributes redirectAttrs) {
+                                        Map<String, MultipartFile> fileMap,
+                                        RedirectAttributes redirectAttrs) {
         if (fileMap == null || demandeId == null) return;
         for (Map.Entry<String, MultipartFile> entry : fileMap.entrySet()) {
             String key = entry.getKey();
@@ -357,8 +453,7 @@ public class DemandeController {
                 Integer pieceJustificativeId = Integer.parseInt(key.substring("fichier_".length()));
                 pieceFournieService.findByDemandeIdAndPieceJustificativeId(demandeId, pieceJustificativeId)
                         .ifPresent(pf -> pieceFichierService.upload(pf.getId(), file));
-            } catch (NumberFormatException e) {
-                // clé mal formée, on ignore
+            } catch (NumberFormatException ignored) {
             } catch (ResponseStatusException e) {
                 redirectAttrs.addFlashAttribute("errorMessage",
                         "Erreur upload « " + file.getOriginalFilename() + " » : " + e.getReason());

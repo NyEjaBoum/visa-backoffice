@@ -28,23 +28,16 @@ public class NomenclatureService {
         this.statutService = statutService;
     }
 
-    public List<TypeVisa> getTypesVisa() {
-        return typeVisaService.findAll();
-    }
+    public List<TypeVisa> getTypesVisa() { return typeVisaService.findAll(); }
+    public List<TypeDemande> getTypesDemande() { return typeDemandeService.findAll(); }
+    public List<Nationalite> getNationalites() { return nationaliteService.findAll(); }
+    public List<SituationFamiliale> getSituationsFamiliales() { return situationFamilialeService.findAll(); }
 
-    public List<TypeDemande> getTypesDemande() {
-        return typeDemandeService.findAll();
-    }
+    public TypeVisa findTypeVisa(Integer id) { return typeVisaService.findById(id); }
+    public TypeDemande findTypeDemande(Integer id) { return typeDemandeService.findById(id); }
+    public TypeDemande findTypeDemandeNouveauTitre() { return typeDemandeService.findByLibelleOrThrow("Nouveau Titre"); }
+    public Nationalite findNationalite(Integer id) { return nationaliteService.findById(id); }
+    public SituationFamiliale findSituationFamiliale(Integer id) { return situationFamilialeService.findById(id); }
 
-    public List<Nationalite> getNationalites() {
-        return nationaliteService.findAll();
-    }
-
-    public List<SituationFamiliale> getSituationsFamiliales() {
-        return situationFamilialeService.findAll();
-    }
-
-    public Statut getStatutCree() {
-        return statutService.getStatutCree();
-    }
+    public Statut getStatutCree() { return statutService.getStatutCree(); }
 }

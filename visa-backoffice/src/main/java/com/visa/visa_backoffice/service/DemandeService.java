@@ -1,6 +1,5 @@
 package com.visa.visa_backoffice.service;
 
-import com.visa.visa_backoffice.dto.DemandeForm;
 import com.visa.visa_backoffice.model.*;
 import com.visa.visa_backoffice.repository.CarteResidentRepository;
 import com.visa.visa_backoffice.repository.DemandeRepository;
@@ -21,57 +20,45 @@ import java.util.List;
 public class DemandeService {
 
     private final DemandeRepository demandeRepository;
-    private final DemandeurService demandeurService;
-    private final PasseportService passeportService;
-    private final TypeVisaService typeVisaService;
-    private final TypeDemandeService typeDemandeService;
     private final StatutService statutService;
-    private final NationaliteService nationaliteService;
-    private final SituationFamilialeService situationFamilialeService;
     private final DossierCompletRepository dossierCompletRepository;
     private final PieceFournieService pieceFournieService;
     private final PieceFournieRepository pieceFournieRepository;
     private final PieceJustificativeService pieceJustificativeService;
-    private final VisaTransformableService visaTransformableService;
     private final HistoriqueStatutDemandeService historiqueDemandeStatutService;
     private final VisaRepository visaRepository;
     private final CarteResidentRepository carteResidentRepository;
     private final PieceFichierService pieceFichierService;
+    private final DemandeurService demandeurService;
+    private final PasseportService passeportService;
+    private final VisaTransformableService visaTransformableService;
 
     public DemandeService(DemandeRepository demandeRepository,
-                          DemandeurService demandeurService,
-                          PasseportService passeportService,
-                          TypeVisaService typeVisaService,
-                          TypeDemandeService typeDemandeService,
                           StatutService statutService,
-                          NationaliteService nationaliteService,
-                          SituationFamilialeService situationFamilialeService,
                           DossierCompletRepository dossierCompletRepository,
                           PieceFournieService pieceFournieService,
                           PieceFournieRepository pieceFournieRepository,
                           PieceJustificativeService pieceJustificativeService,
-                          VisaTransformableService visaTransformableService,
                           HistoriqueStatutDemandeService historiqueDemandeStatutService,
                           VisaRepository visaRepository,
                           CarteResidentRepository carteResidentRepository,
-                          PieceFichierService pieceFichierService) {
+                          PieceFichierService pieceFichierService,
+                          DemandeurService demandeurService,
+                          PasseportService passeportService,
+                          VisaTransformableService visaTransformableService) {
         this.demandeRepository = demandeRepository;
-        this.demandeurService = demandeurService;
-        this.passeportService = passeportService;
-        this.typeVisaService = typeVisaService;
-        this.typeDemandeService = typeDemandeService;
         this.statutService = statutService;
-        this.nationaliteService = nationaliteService;
-        this.situationFamilialeService = situationFamilialeService;
         this.dossierCompletRepository = dossierCompletRepository;
         this.pieceFournieService = pieceFournieService;
         this.pieceFournieRepository = pieceFournieRepository;
         this.pieceJustificativeService = pieceJustificativeService;
-        this.visaTransformableService = visaTransformableService;
         this.historiqueDemandeStatutService = historiqueDemandeStatutService;
         this.visaRepository = visaRepository;
         this.carteResidentRepository = carteResidentRepository;
         this.pieceFichierService = pieceFichierService;
+        this.demandeurService = demandeurService;
+        this.passeportService = passeportService;
+        this.visaTransformableService = visaTransformableService;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -96,22 +83,33 @@ public class DemandeService {
 
     // ─────────────────────────────────────────────────────────────────────────
     // CAS NORMAL — CRÉATION
+    // Le controller construit des stubs (non persistés) et délègue tout ici.
     // ─────────────────────────────────────────────────────────────────────────
 
     @Transactional
-    public Demande creer(DemandeForm form) {
-        form.validateOrThrow();
+    public Demande createComplet(Demandeur demandeurStub, Passeport passeportStub, VisaTransformable vtStub,
+                                  TypeVisa typeVisa, TypeDemande typeDemande,
+                                  List<Integer> piecesFourniesIds) {
+        Demandeur demandeur = demandeurStub.getId() != null
+                ? demandeurService.update(demandeurStub.getId(), demandeurStub)
+                : demandeurService.create(demandeurStub);
 
-        Demandeur demandeur = creerOuMettreAJourDemandeur(form);
-        Passeport passeport = creerOuMettreAJourPasseport(form, demandeur);
-        VisaTransformable vt = creerOuMettreAJourVT(form, passeport, demandeur);
+        passeportStub.setDemandeur(demandeur);
+        Passeport passeport = passeportService.create(passeportStub, demandeur);
+
+        VisaTransformable vt = null;
+        if (vtStub != null) {
+            vtStub.setDemandeur(demandeur);
+            vtStub.setPasseport(passeport);
+            vt = visaTransformableService.create(vtStub, demandeur);
+        }
 
         Demande demande = new Demande();
         demande.setNumDemande(genererNumeroDossier());
         demande.setDemandeur(demandeur);
         demande.setVisaTransformable(vt);
-        demande.setTypeVisa(typeVisaService.findById(form.getTypeVisaId()));
-        demande.setTypeDemande(typeDemandeService.findById(form.getTypeDemandeId()));
+        demande.setTypeVisa(typeVisa);
+        demande.setTypeDemande(typeDemande);
         demande.setStatut(statutService.getStatutCree());
         demande.setDateCreation(LocalDateTime.now());
         demande = demandeRepository.save(demande);
@@ -119,8 +117,8 @@ public class DemandeService {
         historiqueDemandeStatutService.creer(demande, demande.getStatut());
         pieceFournieService.creerChecklist(
                 demande,
-                pieceJustificativeService.findForTypeVisa(form.getTypeVisaId()),
-                form.getPiecesFourniesIds());
+                pieceJustificativeService.findForTypeVisa(typeVisa.getId()),
+                piecesFourniesIds);
 
         return demande;
     }
@@ -130,59 +128,33 @@ public class DemandeService {
     // ─────────────────────────────────────────────────────────────────────────
 
     @Transactional
-    public Demande modifier(Integer id, DemandeForm form) {
-        form.validateOrThrow();
-        Demande demande = findByIdOrThrow(id);
-        verifierDossierModifiable(demande);
+    public Demande updateComplet(Integer demandeId, Demandeur demandeurStub, Passeport passeportStub,
+                                  VisaTransformable vtStub, TypeVisa typeVisa, TypeDemande typeDemande,
+                                  List<Integer> piecesFourniesIds) {
+        Demande demande = findByIdOrThrow(demandeId);
+        verifierModifiable(demande);
 
-        Demandeur demandeur = demande.getDemandeur();
-        Nationalite nat = (form.getNationaliteId() != null) ? nationaliteService.findById(form.getNationaliteId()) : null;
-        SituationFamiliale sit = (form.getSituationFamilialeId() != null) ? situationFamilialeService.findById(form.getSituationFamilialeId()) : null;
-        demandeur.updateFromForm(form, nat, sit);
-        demandeur = demandeurService.create(demandeur);
+        Demandeur demandeur = demandeurService.update(demande.getDemandeur().getId(), demandeurStub);
 
-        Passeport passeport = passeportService.findByDemandeur(demandeur);
-        if (passeport == null) {
-            passeport = passeportService.findByNumero(form.getNumeroPasseport()).orElse(new Passeport());
-            if (passeport.getId() != null && passeport.getDemandeur() != null
-                    && !passeport.getDemandeur().getId().equals(demandeur.getId())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Ce passeport appartient déjà à un autre usager.");
-            }
-        }
-        passeport.updateFromForm(form, demandeur);
-        passeportService.create(passeport);
+        passeportStub.setDemandeur(demandeur);
+        Passeport passeport = passeportService.create(passeportStub, demandeur);
 
-        String vtNum = form.getVisaTransformableNumero();
-        if (vtNum != null && !vtNum.isBlank()) {
-            VisaTransformable vt = demande.getVisaTransformable();
-
-            if (vt == null || !vtNum.trim().equals(vt.getNumero())) {
-                VisaTransformable vtParNumero = visaTransformableService.findByNumero(vtNum).orElse(null);
-                if (vtParNumero != null) {
-                    if (vtParNumero.getDemandeur() != null
-                            && !vtParNumero.getDemandeur().getId().equals(demandeur.getId())) {
-                        throw new ResponseStatusException(HttpStatus.CONFLICT,
-                                "Ce numéro de visa appartient déjà à un autre usager.");
-                    }
-                    vt = vtParNumero;
-                } else if (vt == null) {
-                    vt = new VisaTransformable();
-                }
-            }
-
-            vt.updateFromForm(form, passeport, demandeur);
-            vt = visaTransformableService.save(vt);
-            demande.setVisaTransformable(vt);
+        VisaTransformable vt = null;
+        if (vtStub != null) {
+            vtStub.setDemandeur(demandeur);
+            vtStub.setPasseport(passeport);
+            vt = visaTransformableService.create(vtStub, demandeur);
         }
 
-        demande.setTypeVisa(typeVisaService.findById(form.getTypeVisaId()));
-        demande.setTypeDemande(typeDemandeService.findById(form.getTypeDemandeId()));
+        demande.setVisaTransformable(vt);
+        demande.setTypeVisa(typeVisa);
+        demande.setTypeDemande(typeDemande);
         demande = demandeRepository.save(demande);
 
         pieceFournieService.updateChecklist(
                 demande,
-                pieceJustificativeService.findForTypeVisa(form.getTypeVisaId()),
-                form.getPiecesFourniesIds());
+                pieceJustificativeService.findForTypeVisa(typeVisa.getId()),
+                piecesFourniesIds);
 
         return demande;
     }
@@ -192,41 +164,61 @@ public class DemandeService {
     // ─────────────────────────────────────────────────────────────────────────
 
     @Transactional
-    public Demande creerSansDonneesAnterieur(DemandeForm form) {
-        form.validateOrThrow();
+    public Demande createRattrapageComplet(Demandeur demandeurStub, Passeport passeportStub, VisaTransformable vtStub,
+                                            TypeVisa typeVisa, TypeDemande typeDemande,
+                                            TypeDemande typeDemandeInjection,
+                                            Visa visaInjecteStub, CarteResident carteInjecteeStub) {
+        Demandeur demandeur = demandeurStub.getId() != null
+                ? demandeurService.update(demandeurStub.getId(), demandeurStub)
+                : demandeurService.create(demandeurStub);
 
-        Demandeur demandeur = creerOuMettreAJourDemandeur(form);
-        Passeport passeport = creerOuMettreAJourPasseport(form, demandeur);
-        VisaTransformable vt = creerOuMettreAJourVT(form, passeport, demandeur);
+        passeportStub.setDemandeur(demandeur);
+        Passeport passeport = passeportService.create(passeportStub, demandeur);
+
+        VisaTransformable vt = null;
+        if (vtStub != null) {
+            vtStub.setDemandeur(demandeur);
+            vtStub.setPasseport(passeport);
+            vt = visaTransformableService.create(vtStub, demandeur);
+        }
+
+        if (visaInjecteStub != null) visaInjecteStub.setPasseport(passeport);
+        if (carteInjecteeStub != null) carteInjecteeStub.setPasseport(passeport);
 
         // ÉTAPE A : demande d'injection (le passé — statut VISA APPROUVE)
         Demande demandeInj = new Demande();
         demandeInj.setNumDemande(genererNumeroDossier());
         demandeInj.setDemandeur(demandeur);
         demandeInj.setVisaTransformable(vt);
-        demandeInj.setTypeDemande(typeDemandeService.findById(1));
-        demandeInj.setTypeVisa(typeVisaService.findById(form.getTypeVisaId()));
+        demandeInj.setTypeDemande(typeDemandeInjection);
+        demandeInj.setTypeVisa(typeVisa);
         demandeInj.setStatut(statutService.getStatutVisaApprouve());
         demandeInj.setDateCreation(LocalDateTime.now());
         demandeInj = demandeRepository.save(demandeInj);
         historiqueDemandeStatutService.creer(demandeInj, demandeInj.getStatut());
 
-        creerVisaInjecte(demandeInj, passeport, form);
-        creerCarteResidentInjectee(demandeInj, passeport, form);
+        if (visaInjecteStub != null) {
+            visaInjecteStub.setDemande(demandeInj);
+            visaRepository.save(visaInjecteStub);
+        }
+        if (carteInjecteeStub != null) {
+            carteInjecteeStub.setDemande(demandeInj);
+            carteResidentRepository.save(carteInjecteeStub);
+        }
 
         // ÉTAPE B : demande cible (le présent — statut CREE)
         Demande demandeB = new Demande();
         demandeB.setNumDemande(genererNumeroDossier());
         demandeB.setDemandeur(demandeur);
         demandeB.setVisaTransformable(vt);
-        demandeB.setTypeVisa(typeVisaService.findById(form.getTypeVisaId()));
-        demandeB.setTypeDemande(typeDemandeService.findById(form.getTypeDemandeId()));
+        demandeB.setTypeVisa(typeVisa);
+        demandeB.setTypeDemande(typeDemande);
         demandeB.setStatut(statutService.getStatutCree());
         demandeB.setDateCreation(LocalDateTime.now());
         demandeB = demandeRepository.save(demandeB);
         historiqueDemandeStatutService.creer(demandeB, demandeB.getStatut());
 
-        List<PieceJustificative> piecesB = pieceJustificativeService.findForTypeVisa(form.getTypeVisaId());
+        List<PieceJustificative> piecesB = pieceJustificativeService.findForTypeVisa(typeVisa.getId());
         pieceFournieService.creerChecklist(
                 demandeB,
                 piecesB,
@@ -242,7 +234,7 @@ public class DemandeService {
     @Transactional
     public Demande finaliserScan(Integer demandeId) {
         Demande demande = findByIdOrThrow(demandeId);
-        verifierDossierModifiable(demande);
+        verifierModifiable(demande);
 
         List<PieceFournie> toutesLesPieces = pieceFournieRepository.findAllForDemande(demandeId);
 
@@ -255,7 +247,7 @@ public class DemandeService {
                 .allMatch(pf -> Boolean.TRUE.equals(pf.getIsPresent()));
         if (!toutesPresentes) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Toutes les pièces justificatives (obligatoires et optionnelles) doivent être cochées avant la finalisation.");
+                    "Toutes les pièces justificatives doivent être cochées avant la finalisation.");
         }
 
         if (!pieceFichierService.toutesLesPiecesOntUnFichier(toutesLesPieces)) {
@@ -274,75 +266,12 @@ public class DemandeService {
     // HELPERS PRIVÉS
     // ─────────────────────────────────────────────────────────────────────────
 
-    private void verifierDossierModifiable(Demande demande) {
+    private void verifierModifiable(Demande demande) {
         String statut = demande.getStatut() != null ? demande.getStatut().getLibelle() : "";
         if ("SCAN TERMINÉ".equalsIgnoreCase(statut)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Ce dossier est finalisé (SCAN TERMINÉ) et ne peut plus être modifié.");
         }
-    }
-
-    private Demandeur creerOuMettreAJourDemandeur(DemandeForm form) {
-        Demandeur demandeur = (form.getDemandeurId() != null)
-                ? demandeurService.findByIdOrThrow(form.getDemandeurId())
-                : new Demandeur();
-        Nationalite nat = (form.getNationaliteId() != null) ? nationaliteService.findById(form.getNationaliteId()) : null;
-        SituationFamiliale sit = (form.getSituationFamilialeId() != null) ? situationFamilialeService.findById(form.getSituationFamilialeId()) : null;
-        demandeur.updateFromForm(form, nat, sit);
-        return demandeurService.create(demandeur);
-    }
-
-    private Passeport creerOuMettreAJourPasseport(DemandeForm form, Demandeur demandeur) {
-        Passeport passeport = passeportService.findByNumero(form.getNumeroPasseport()).orElse(null);
-        if (passeport != null) {
-            if (demandeur.getId() != null && passeport.getDemandeur() != null
-                    && !passeport.getDemandeur().getId().equals(demandeur.getId())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Ce passeport appartient à un autre usager.");
-            }
-        } else {
-            passeport = new Passeport();
-        }
-        passeport.updateFromForm(form, demandeur);
-        return passeportService.create(passeport);
-    }
-
-    private VisaTransformable creerOuMettreAJourVT(DemandeForm form, Passeport passeport, Demandeur demandeur) {
-        String vtNum = form.getVisaTransformableNumero();
-        if (vtNum == null || vtNum.isBlank()) return null;
-
-        VisaTransformable vt = visaTransformableService.findByNumero(vtNum).orElse(null);
-        if (vt != null) {
-            if (demandeur.getId() != null && vt.getDemandeur() != null
-                    && !vt.getDemandeur().getId().equals(demandeur.getId())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Ce visa transformable appartient à un autre usager.");
-            }
-        } else {
-            vt = new VisaTransformable();
-        }
-        vt.updateFromForm(form, passeport, demandeur);
-        return visaTransformableService.save(vt);
-    }
-
-    private void creerVisaInjecte(Demande demande, Passeport passeport, DemandeForm form) {
-        if (form.getNumeroVisa() == null || form.getDateDebutVisa() == null || form.getDateFinVisa() == null) return;
-        Visa visa = new Visa();
-        visa.setDemande(demande);
-        visa.setNumero(form.getNumeroVisa());
-        visa.setDateDebut(form.getDateDebutVisa());
-        visa.setDateFin(form.getDateFinVisa());
-        visa.setPasseport(passeport);
-        visaRepository.save(visa);
-    }
-
-    private void creerCarteResidentInjectee(Demande demande, Passeport passeport, DemandeForm form) {
-        if (form.getNumeroCarteResident() == null || form.getDateDebutCarte() == null || form.getDateFinCarte() == null) return;
-        CarteResident carte = new CarteResident();
-        carte.setDemande(demande);
-        carte.setNumero(form.getNumeroCarteResident());
-        carte.setDateDebut(form.getDateDebutCarte());
-        carte.setDateFin(form.getDateFinCarte());
-        carte.setPasseport(passeport);
-        carteResidentRepository.save(carte);
     }
 
     private String genererNumeroDossier() {
