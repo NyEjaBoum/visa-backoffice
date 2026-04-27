@@ -1,6 +1,5 @@
 package com.visa.visa_backoffice.model;
 
-import com.visa.visa_backoffice.dto.DemandeForm;
 import jakarta.persistence.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -47,13 +46,6 @@ public class Passeport {
 
     public LocalDate getDateExpiration() { return dateExpiration; }
     public void setDateExpiration(LocalDate dateExpiration) { this.dateExpiration = dateExpiration; }
-
-    public void updateFromForm(DemandeForm form, Demandeur demandeur) {
-        setNumero(form.getNumeroPasseport());
-        setDateDelivrance(form.getDateDelivrance());
-        setDateExpiration(form.getDateExpiration());
-        setDemandeur(demandeur);
-    }
 
     private String trim(String s) { return s == null ? null : s.trim(); }
 }

@@ -1,6 +1,5 @@
 package com.visa.visa_backoffice.model;
 
-import com.visa.visa_backoffice.dto.DemandeForm;
 import jakarta.persistence.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -97,18 +96,6 @@ public class Demandeur {
 
     public LocalDateTime getUpdatedDate() { return updatedDate; }
     public void setUpdatedDate(LocalDateTime updatedDate) { this.updatedDate = updatedDate; }
-
-    public void updateFromForm(DemandeForm form, Nationalite nationalite, SituationFamiliale situationFamiliale) {
-        setNom(form.getNom());
-        setPrenoms(form.getPrenoms());
-        setNomJeuneFille(form.getNomJeuneFille());
-        setDateNaissance(form.getDateNaissance());
-        setProfession(form.getProfession());
-        setAdresseMada(form.getAdresseMada());
-        setContactMada(form.getContactMada());
-        if (nationalite != null) setNationalite(nationalite);
-        if (situationFamiliale != null) setSituationFamiliale(situationFamiliale);
-    }
 
     private boolean blank(String s) { return s == null || s.isBlank(); }
     private String trim(String s) { return s == null ? null : s.trim(); }
