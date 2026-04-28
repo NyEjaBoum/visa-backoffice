@@ -35,8 +35,7 @@ public class NomenclatureService {
 
     public TypeVisa findTypeVisa(Integer id) { return typeVisaService.findById(id); }
     public TypeDemande findTypeDemande(Integer id) { return typeDemandeService.findById(id); }
-    public TypeDemande findTypeDemandeNouveauTitre() { return typeDemandeService.findByLibelleOrThrow("Nouveau Titre"); }
-    public Nationalite findNationalite(Integer id) { return nationaliteService.findById(id); }
+public Nationalite findNationalite(Integer id) { return nationaliteService.findById(id); }
     public SituationFamiliale findSituationFamiliale(Integer id) { return situationFamilialeService.findById(id); }
 
     public Statut getStatutCree() { return statutService.getStatutCree(); }

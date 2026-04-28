@@ -32,10 +32,10 @@ public class PdfService {
     private static final Font FONT_SMALL = new Font(Font.HELVETICA, 8, Font.ITALIC, Color.GRAY);
 
     public byte[] genererRecepisse(Demande demande, Passeport passeport, List<PieceFournie> piecesPresentes) {
-        if (!"SCAN TERMINÉ".equalsIgnoreCase(demande.getStatut() != null ? demande.getStatut().getLibelle() : "")) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Le récépissé ne peut être généré qu'après la finalisation du scan.");
-        }
+        // if (!"SCAN TERMINÉ".equalsIgnoreCase(demande.getStatut() != null ? demande.getStatut().getLibelle() : "")) {
+        //     throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+        //             "Le récépissé ne peut être généré qu'après la finalisation du scan.");
+        // }
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         Document doc = new Document(PageSize.A4, 40, 40, 50, 50);
