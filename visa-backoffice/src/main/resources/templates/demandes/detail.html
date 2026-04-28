@@ -287,7 +287,7 @@
                     Modifier ce dossier
                 </a>
                 <!-- Télécharger le récépissé PDF (uniquement après scan terminé) -->
-                <a th:if="${scanTermine}"
+                <a
                    th:href="@{/demandes/{id}/recepisse.pdf(id=${demande.id})}"
                    class="btn-pdf">
                     ⬇ Télécharger le récépissé PDF

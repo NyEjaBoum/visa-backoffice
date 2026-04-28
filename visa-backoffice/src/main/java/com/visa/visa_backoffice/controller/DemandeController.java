@@ -135,7 +135,7 @@ public class DemandeController {
                     construireVT(form),
                     nomenclatureService.findTypeVisa(form.getTypeVisaId()),
                     nomenclatureService.findTypeDemande(form.getTypeDemandeId()),
-                    nomenclatureService.findTypeDemandeNouveauTitre(),
+                    nomenclatureService.findTypeDemande(1),
                     construireVisaInjecte(form),
                     construireCarteInjectee(form));
 
@@ -310,13 +310,16 @@ public class DemandeController {
 
     @PostMapping("/{id}/finaliser-scan")
     public String finaliserScan(@PathVariable Integer id,
-                                @ModelAttribute("form") DemandeForm form,
                                 RedirectAttributes redirectAttrs,
                                 Model model) {
         try {
-            form.validateOrThrow();
-
             Demande demande = demandeService.findByIdOrThrow(id);
+            Passeport passeport = passeportService.findLastForDemandeur(
+                    demande.getDemandeur() == null ? null : demande.getDemandeur().getId()
+            ).orElse(null);
+
+            DemandeForm form = buildFormFromDemande(demande, passeport);
+            form.setPiecesFourniesIds(pieceFournieService.findPresentPieceIds(id));
 
             demandeService.finaliserScan(
                     demande,
@@ -333,13 +336,8 @@ public class DemandeController {
             return "redirect:/demandes/" + id;
 
         } catch (ResponseStatusException e) {
-            model.addAttribute("errorMessage", e.getReason());
-            model.addAttribute("demandeId", id);
-            chargerNomenclatures(model);
-            model.addAttribute("piecesJustificatives",
-                    pieceJustificativeService.findForTypeVisa(form.getTypeVisaId()));
-            chargerDonneesUpload(id, model);
-            return "demandes/formulaire";
+            redirectAttrs.addFlashAttribute("errorMessage", e.getReason());
+            return "redirect:/demandes/" + id;
         }
     }
 

@@ -219,27 +219,30 @@ public class DemandeService {
                 typeDemandeInjection, allPiecesIds, statutService.getStatutVisaApprouve()
         );
 
+        // Récupérer le passeport créé à l'étape A (VT peut être null si non renseigné)
+        Passeport passeportEtapeA = passeportService.findLastForDemandeur(demandeInj.getDemandeur().getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Passeport introuvable après injection."));
+
         // Liaison des documents physiques à l'injection
         if (visaInjecteStub != null) {
             visaInjecteStub.setDemande(demandeInj);
-            visaInjecteStub.setPasseport(demandeInj.getVisaTransformable().getPasseport());
+            visaInjecteStub.setPasseport(passeportEtapeA);
             visaRepository.save(visaInjecteStub);
         }
         if (carteInjecteeStub != null) {
             carteInjecteeStub.setDemande(demandeInj);
-            carteInjecteeStub.setPasseport(demandeInj.getVisaTransformable().getPasseport());
+            carteInjecteeStub.setPasseport(passeportEtapeA);
             carteResidentRepository.save(carteInjecteeStub);
         }
 
-        // ÉTAPE B : Création du présent (Dossier Cible)
-        // On repart du demandeur/passeport/VT créés à l'étape A pour éviter les doublons
+        // ÉTAPE B : Création du présent (Dossier Cible — DUPLICATA ou TRANSFERT)
         return createComplet(
                 demandeInj.getDemandeur(),
-                demandeInj.getVisaTransformable().getPasseport(),
+                passeportEtapeA,
                 demandeInj.getVisaTransformable(),
                 typeVisa,
                 typeDemandeCible,
-                allPiecesIds, // Par défaut tout coché en rattrapage
+                allPiecesIds,
                 statutService.getStatutCree()
         );
     }
