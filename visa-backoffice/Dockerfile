@@ -1,8 +1,8 @@
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
-COPY visa-backoffice/pom.xml .
+COPY pom.xml .
 RUN mvn dependency:go-offline -B
-COPY visa-backoffice/src ./src
+COPY src ./src
 RUN mvn package -DskipTests -B
 
 FROM eclipse-temurin:17-jre
