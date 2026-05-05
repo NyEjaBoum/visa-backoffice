@@ -38,7 +38,7 @@ public class DemandeForm {
     private Integer typeVisaId;
     private Integer typeDemandeId;
 
-    // Visa transformable (optionnel)
+    // Visa transformable
     private String visaTransformableNumero;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
