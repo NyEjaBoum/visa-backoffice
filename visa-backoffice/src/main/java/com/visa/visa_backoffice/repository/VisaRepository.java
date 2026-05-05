@@ -7,5 +7,9 @@ import java.util.Optional;
 
 public interface VisaRepository extends JpaRepository<Visa, Integer> {
 
+	Optional<Visa> findByNumero(String numero);
+
+	Optional<Visa> findByDemandeId(Integer demandeId);
+
 	Optional<Visa> findTopByNumeroStartingWithOrderByNumeroDesc(String prefix);
 }
