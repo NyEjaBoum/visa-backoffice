@@ -16,14 +16,38 @@ const passeportNumeroInput = ref('')
 
 const loading = ref(false)
 const errorMsg = ref('')
+
+// Vue détail unique (recherche par QR token)
 const suivi = ref(null)
+// Vue liste (recherche par numéro de demande ou passeport)
+const suiviList = ref(null)
+// Numéro de la demande dont l'historique est affiché (accordion)
+const expandedNumero = ref(null)
+
+function clearResults() {
+  suivi.value = null
+  suiviList.value = null
+  errorMsg.value = ''
+}
+
+async function loadByToken(token) {
+  loading.value = true
+  clearResults()
+  try {
+    suivi.value = await getSuiviByToken(token)
+  } catch (e) {
+    errorMsg.value = e?.message || 'Impossible de charger le suivi'
+  } finally {
+    loading.value = false
+  }
+}
 
 async function loadByDemandeNumero(demandeNumero) {
   loading.value = true
-  errorMsg.value = ''
-  suivi.value = null
+  clearResults()
   try {
-    suivi.value = await getSuiviByDemandeNumero(demandeNumero)
+    suiviList.value = await getSuiviByDemandeNumero(demandeNumero)
+    expandedNumero.value = suiviList.value?.demandeSelectionneeNumero || null
   } catch (e) {
     errorMsg.value = e?.message || 'Impossible de charger le suivi'
   } finally {
@@ -33,10 +57,10 @@ async function loadByDemandeNumero(demandeNumero) {
 
 async function loadByPasseportNumero(passeportNumero) {
   loading.value = true
-  errorMsg.value = ''
-  suivi.value = null
+  clearResults()
   try {
-    suivi.value = await getSuiviByPasseportNumero(passeportNumero)
+    suiviList.value = await getSuiviByPasseportNumero(passeportNumero)
+    expandedNumero.value = suiviList.value?.demandeSelectionneeNumero || null
   } catch (e) {
     errorMsg.value = e?.message || 'Impossible de charger le suivi'
   } finally {
@@ -61,22 +85,13 @@ function badgeClass(statut) {
   const libelle = (statut || '').toUpperCase()
   if (!libelle) return 'badge badge--muted'
   if (libelle.includes('REFUS') || libelle.includes('REJETE')) return 'badge badge--danger'
-  if (libelle.includes('APPROUV') || libelle.includes('VALID')) return 'badge badge--primary'
+  if (libelle.includes('APPROUV') || libelle.includes('VALID')) return 'badge badge--success'
   if (libelle.includes('SCAN')) return 'badge badge--primary'
   return 'badge badge--muted'
 }
 
-async function loadByToken(token) {
-  loading.value = true
-  errorMsg.value = ''
-  suivi.value = null
-  try {
-    suivi.value = await getSuiviByToken(token)
-  } catch (e) {
-    errorMsg.value = e?.message || 'Impossible de charger le suivi'
-  } finally {
-    loading.value = false
-  }
+function toggleExpand(numDemande) {
+  expandedNumero.value = expandedNumero.value === numDemande ? null : numDemande
 }
 
 async function loadFromRoute() {
@@ -109,8 +124,7 @@ async function loadFromRoute() {
 }
 
 async function submit() {
-  errorMsg.value = ''
-  suivi.value = null
+  clearResults()
 
   const t = tokenInput.value.trim()
   const dn = demandeNumeroInput.value.trim()
@@ -123,7 +137,6 @@ async function submit() {
         await loadByToken(t)
         return
       }
-
       await router.push(`/suivi/${encodeURIComponent(t)}`)
       return
     }
@@ -134,7 +147,6 @@ async function submit() {
         await loadByDemandeNumero(dn)
         return
       }
-
       await router.push({ path: '/suivi', query: { demandeNumero: dn } })
       return
     }
@@ -145,7 +157,6 @@ async function submit() {
         await loadByPasseportNumero(pn)
         return
       }
-
       await router.push({ path: '/suivi', query: { passeportNumero: pn } })
       return
     }
@@ -178,6 +189,7 @@ watch(
     </header>
 
     <main class="canvas">
+      <!-- Formulaire de recherche -->
       <div class="paper">
         <form class="form" @submit.prevent="submit">
           <div class="grid">
@@ -207,10 +219,10 @@ watch(
       </div>
 
       <div v-if="errorMsg" class="error-msg-box">{{ errorMsg }}</div>
-
       <div v-else-if="loading" class="state-msg">Chargement…</div>
 
-      <div v-else-if="suivi" class="paper" style="margin-top: 14px;">
+      <!-- Vue détail unique (QR token) -->
+      <div v-else-if="suivi" class="paper result-paper">
         <div class="summary">
           <div>
             <div class="k">Demande</div>
@@ -239,9 +251,7 @@ watch(
           </thead>
           <tbody>
             <tr v-for="(h, idx) in (suivi.historique || [])" :key="idx">
-              <td>
-                <span :class="badgeClass(h.statut)">{{ (h.statut || '').toUpperCase() }}</span>
-              </td>
+              <td><span :class="badgeClass(h.statut)">{{ (h.statut || '').toUpperCase() }}</span></td>
               <td>{{ formatDateTime(h.dateHeure) }}</td>
             </tr>
             <tr v-if="(suivi.historique || []).length === 0">
@@ -249,6 +259,53 @@ watch(
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Vue liste (numéro de demande ou passeport) -->
+      <div v-else-if="suiviList" class="result-paper">
+        <div class="demandeur-header paper">
+          <div class="k">Demandeur</div>
+          <div class="demandeur-name">{{ suiviList.demandeurNom }} {{ suiviList.demandeurPrenoms }}</div>
+          <div class="demande-count">{{ suiviList.demandes.length }} demande{{ suiviList.demandes.length > 1 ? 's' : '' }}</div>
+        </div>
+
+        <div
+          v-for="item in suiviList.demandes"
+          :key="item.demandeNumero"
+          class="demande-card"
+          :class="{ 'demande-card--selected': item.demandeNumero === suiviList.demandeSelectionneeNumero }"
+        >
+          <div class="demande-card-header" @click="toggleExpand(item.demandeNumero)">
+            <div class="demande-card-info">
+              <div class="demande-card-num mono">{{ item.demandeNumero }}</div>
+              <div class="demande-card-date">{{ formatDateTime(item.demandeDateCreation) }}</div>
+            </div>
+            <div class="demande-card-right">
+              <span :class="badgeClass(item.statutActuel)">{{ (item.statutActuel || '—').toUpperCase() }}</span>
+              <span class="chevron" :class="{ 'chevron--open': expandedNumero === item.demandeNumero }">›</span>
+            </div>
+          </div>
+
+          <div v-if="expandedNumero === item.demandeNumero" class="demande-card-body">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Étape</th>
+                  <th>Date / Heure</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(h, idx) in (item.historique || [])" :key="idx">
+                  <td><span :class="badgeClass(h.statut)">{{ (h.statut || '').toUpperCase() }}</span></td>
+                  <td>{{ formatDateTime(h.dateHeure) }}</td>
+                </tr>
+                <tr v-if="(item.historique || []).length === 0">
+                  <td colspan="2" class="empty">Aucun historique.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </main>
   </div>
@@ -292,6 +349,13 @@ watch(
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   overflow: hidden;
+}
+
+.result-paper {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .form {
@@ -359,28 +423,7 @@ watch(
   cursor: not-allowed;
 }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.table th {
-  text-align: left;
-  font-size: 12px;
-  color: var(--text-gray);
-  font-weight: 600;
-  padding: 12px 14px;
-  background: #fafafa;
-  border-bottom: 1px solid #eef2f7;
-}
-
-.table td {
-  padding: 12px 14px;
-  border-bottom: 1px solid #eef2f7;
-  font-size: 13px;
-  color: var(--text-dark);
-  vertical-align: middle;
-}
+/* ── Vue détail unique ──────────────────────────────── */
 
 .summary {
   display: grid;
@@ -406,6 +449,118 @@ watch(
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
+/* ── Vue liste (accordion) ──────────────────────────── */
+
+.demandeur-header {
+  padding: 14px;
+}
+
+.demandeur-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-top: 4px;
+}
+
+.demande-count {
+  font-size: 12px;
+  color: var(--text-gray);
+  margin-top: 2px;
+}
+
+.demande-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.demande-card--selected {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 2px rgba(21, 112, 176, 0.12);
+}
+
+.demande-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.demande-card-header:hover {
+  background: #fafafa;
+}
+
+.demande-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.demande-card-num {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.demande-card-date {
+  font-size: 12px;
+  color: var(--text-gray);
+}
+
+.demande-card-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chevron {
+  font-size: 18px;
+  color: var(--text-gray);
+  display: inline-block;
+  transform: rotate(0deg);
+  transition: transform 0.2s;
+  line-height: 1;
+}
+
+.chevron--open {
+  transform: rotate(90deg);
+}
+
+.demande-card-body {
+  border-top: 1px solid #eef2f7;
+}
+
+/* ── Table commune ──────────────────────────────────── */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  text-align: left;
+  font-size: 12px;
+  color: var(--text-gray);
+  font-weight: 600;
+  padding: 12px 14px;
+  background: #fafafa;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #eef2f7;
+  font-size: 13px;
+  color: var(--text-dark);
+  vertical-align: middle;
+}
+
+/* ── Badges ─────────────────────────────────────────── */
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -418,7 +573,10 @@ watch(
 
 .badge--muted { color: var(--text-gray); }
 .badge--primary { color: var(--primary-blue); border-color: rgba(21, 112, 176, 0.35); }
+.badge--success { color: #15803d; border-color: rgba(21, 128, 61, 0.35); }
 .badge--danger { color: var(--danger-red); border-color: rgba(211, 47, 47, 0.35); }
+
+/* ── États ──────────────────────────────────────────── */
 
 .state-msg {
   font-size: 13px;

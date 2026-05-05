@@ -1,7 +1,6 @@
 package com.visa.visa_backoffice.controller.api;
 
 import com.visa.visa_backoffice.model.Demande;
-import com.visa.visa_backoffice.model.HistoriqueStatutDemande;
 import com.visa.visa_backoffice.repository.DemandeRepository;
 import com.visa.visa_backoffice.repository.HistoriqueStatutDemandeRepository;
 import com.visa.visa_backoffice.repository.PasseportRepository;
@@ -30,6 +29,8 @@ public class SuiviPublicController {
         this.historiqueRepository = historiqueRepository;
     }
 
+    // ─── Recherche par QR token (vue détail unique) ───────────────────────────
+
     @GetMapping("/{token}")
     public SuiviResponse getByToken(@PathVariable String token) {
         UUID uuid;
@@ -42,49 +43,72 @@ public class SuiviPublicController {
         Demande demande = demandeRepository.findByQrToken(uuid)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Demande introuvable."));
 
-        return buildResponse(demande);
+        return buildSuiviResponse(demande);
     }
 
-    @GetMapping
-    public SuiviResponse getByQuery(@RequestParam(required = false) String demandeNumero,
-                                   @RequestParam(required = false) String passeportNumero) {
-        String demandeNumeroTrim = demandeNumero == null ? null : demandeNumero.trim();
-        String passeportNumeroTrim = passeportNumero == null ? null : passeportNumero.trim();
+    // ─── Recherche par numéro de demande ou passeport (vue liste) ─────────────
 
-        if ((demandeNumeroTrim == null || demandeNumeroTrim.isBlank())
-                && (passeportNumeroTrim == null || passeportNumeroTrim.isBlank())) {
+    @GetMapping
+    public SuiviListResponse getByQuery(@RequestParam(required = false) String demandeNumero,
+                                        @RequestParam(required = false) String passeportNumero) {
+        String dnTrim = demandeNumero == null ? null : demandeNumero.trim();
+        String pnTrim = passeportNumero == null ? null : passeportNumero.trim();
+
+        if ((dnTrim == null || dnTrim.isBlank()) && (pnTrim == null || pnTrim.isBlank())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Paramètre obligatoire : demandeNumero ou passeportNumero");
         }
 
-        if (demandeNumeroTrim != null && !demandeNumeroTrim.isBlank()) {
-            Demande demande = demandeRepository.findByNumDemande(demandeNumeroTrim)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Demande introuvable."));
-            return buildResponse(demande);
+        if (dnTrim != null && !dnTrim.isBlank()) {
+            return rechercherParNumDemande(dnTrim);
         }
 
-        var passeport = passeportRepository.findByNumero(passeportNumeroTrim)
+        return rechercherParPasseport(pnTrim);
+    }
+
+    private SuiviListResponse rechercherParNumDemande(String numDemande) {
+        Demande principale = demandeRepository.findByNumDemande(numDemande)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Demande introuvable."));
+
+        Integer demandeurId = principale.getDemandeur().getId();
+        List<Demande> toutes = demandeRepository.findAllByDemandeurIdWithRefs(demandeurId);
+
+        String nom = principale.getDemandeur().getNom();
+        String prenoms = principale.getDemandeur().getPrenoms();
+
+        List<SuiviDemandeItem> items = toutes.stream().map(this::buildDemandeItem).toList();
+
+        return new SuiviListResponse(nom, prenoms, numDemande, items);
+    }
+
+    private SuiviListResponse rechercherParPasseport(String passeportNumero) {
+        var passeport = passeportRepository.findByNumero(passeportNumero)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Passeport introuvable."));
 
         Integer demandeurId = passeport.getDemandeur() == null ? null : passeport.getDemandeur().getId();
         if (demandeurId == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Demande introuvable.");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Aucun demandeur lié à ce passeport.");
         }
 
-        Demande demande = demandeRepository.findTopByDemandeur_IdOrderByDateCreationDesc(demandeurId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Demande introuvable."));
+        List<Demande> toutes = demandeRepository.findAllByDemandeurIdWithRefs(demandeurId);
+        if (toutes.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Aucune demande trouvée.");
+        }
 
-        return buildResponse(demande);
+        Demande premiere = toutes.get(0);
+        String nom = premiere.getDemandeur().getNom();
+        String prenoms = premiere.getDemandeur().getPrenoms();
+        String selected = premiere.getNumDemande();
+
+        List<SuiviDemandeItem> items = toutes.stream().map(this::buildDemandeItem).toList();
+
+        return new SuiviListResponse(nom, prenoms, selected, items);
     }
 
-    private SuiviResponse buildResponse(Demande demande) {
-        List<HistoriqueStatutDemande> items = historiqueRepository
-                .findByDemandeIdOrderByDateChangementAsc(demande.getId());
+    // ─── Builders ─────────────────────────────────────────────────────────────
 
-        List<SuiviEtapeResponse> historique = items.stream().map(h -> new SuiviEtapeResponse(
-                h.getStatut() == null ? null : h.getStatut().getLibelle(),
-                h.getDateChangement()
-        )).toList();
+    private SuiviResponse buildSuiviResponse(Demande demande) {
+        List<SuiviEtapeResponse> historique = buildHistorique(demande.getId());
 
         String statutActuel = null;
         if (!historique.isEmpty()) {
@@ -107,14 +131,59 @@ public class SuiviPublicController {
         );
     }
 
+    private SuiviDemandeItem buildDemandeItem(Demande demande) {
+        List<SuiviEtapeResponse> historique = buildHistorique(demande.getId());
+
+        String statutActuel = null;
+        if (!historique.isEmpty()) {
+            statutActuel = historique.get(historique.size() - 1).statut();
+        } else if (demande.getStatut() != null) {
+            statutActuel = demande.getStatut().getLibelle();
+        }
+
+        return new SuiviDemandeItem(
+                demande.getQrToken(),
+                demande.getNumDemande(),
+                demande.getDateCreation(),
+                statutActuel,
+                historique
+        );
+    }
+
+    private List<SuiviEtapeResponse> buildHistorique(Integer demandeId) {
+        return historiqueRepository
+                .findByDemandeIdOrderByDateChangementAsc(demandeId)
+                .stream()
+                .map(h -> new SuiviEtapeResponse(
+                        h.getStatut() == null ? null : h.getStatut().getLibelle(),
+                        h.getDateChangement()
+                ))
+                .toList();
+    }
+
+    // ─── Response records ─────────────────────────────────────────────────────
+
     public record SuiviEtapeResponse(String statut, LocalDateTime dateHeure) {}
 
-    public record SuiviResponse(UUID token,
-                                String demandeNumero,
-                                LocalDateTime demandeDateCreation,
-                                String statutActuel,
-                                String demandeurNom,
-                                String demandeurPrenoms,
-                                List<SuiviEtapeResponse> historique) {
-    }
+    public record SuiviResponse(
+            UUID token,
+            String demandeNumero,
+            LocalDateTime demandeDateCreation,
+            String statutActuel,
+            String demandeurNom,
+            String demandeurPrenoms,
+            List<SuiviEtapeResponse> historique) {}
+
+    public record SuiviDemandeItem(
+            UUID token,
+            String demandeNumero,
+            LocalDateTime demandeDateCreation,
+            String statutActuel,
+            List<SuiviEtapeResponse> historique) {}
+
+    public record SuiviListResponse(
+            String demandeurNom,
+            String demandeurPrenoms,
+            String demandeSelectionneeNumero,
+            List<SuiviDemandeItem> demandes) {}
 }

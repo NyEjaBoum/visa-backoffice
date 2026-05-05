@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+
 public interface DemandeRepository extends JpaRepository<Demande, Integer> {
 
     @Query("""
@@ -40,4 +41,13 @@ public interface DemandeRepository extends JpaRepository<Demande, Integer> {
         Optional<Demande> findByNumDemande(String numDemande);
 
         Optional<Demande> findTopByDemandeur_IdOrderByDateCreationDesc(Integer demandeurId);
+
+        @Query("""
+                SELECT d FROM Demande d
+                JOIN FETCH d.demandeur de
+                LEFT JOIN FETCH d.statut s
+                WHERE de.id = :demandeurId
+                ORDER BY d.dateCreation DESC
+                """)
+        List<Demande> findAllByDemandeurIdWithRefs(@Param("demandeurId") Integer demandeurId);
 }
