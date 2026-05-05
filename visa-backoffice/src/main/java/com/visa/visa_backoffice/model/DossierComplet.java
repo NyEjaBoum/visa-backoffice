@@ -1,7 +1,6 @@
 package com.visa.visa_backoffice.model;
 
 import jakarta.persistence.*;
-import lombok.Getter;
 import org.hibernate.annotations.Immutable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -9,7 +8,6 @@ import java.time.LocalDateTime;
 @Entity
 @Immutable
 @Table(name = "v_dossier_complet")
-@Getter
 public class DossierComplet {
 
     @Column(name = "demande_id")
@@ -101,4 +99,124 @@ public class DossierComplet {
 
     @Column(name = "vt_date_fin")
     private LocalDate vtDateFin;
+
+    public Integer getDemandeId() {
+        return demandeId;
+    }
+
+    public String getDemandeNumero() {
+        return demandeNumero;
+    }
+
+    public LocalDateTime getDemandeDateCreation() {
+        return demandeDateCreation;
+    }
+
+    public String getStatutActuel() {
+        return statutActuel;
+    }
+
+    public Integer getTypeDemandeId() {
+        return typeDemandeId;
+    }
+
+    public String getTypeDemandeLibelle() {
+        return typeDemandeLibelle;
+    }
+
+    public Integer getTypeVisaId() {
+        return typeVisaId;
+    }
+
+    public String getTypeVisaLibelle() {
+        return typeVisaLibelle;
+    }
+
+    public Integer getDemandeurId() {
+        return demandeurId;
+    }
+
+    public String getNom() {
+        return nom;
+    }
+
+    public String getPrenoms() {
+        return prenoms;
+    }
+
+    public String getNomJeuneFille() {
+        return nomJeuneFille;
+    }
+
+    public LocalDate getDateNaissance() {
+        return dateNaissance;
+    }
+
+    public String getProfession() {
+        return profession;
+    }
+
+    public String getAdresseMada() {
+        return adresseMada;
+    }
+
+    public String getContactMada() {
+        return contactMada;
+    }
+
+    public Integer getSituationFamilialeId() {
+        return situationFamilialeId;
+    }
+
+    public String getSituationFamiliale() {
+        return situationFamiliale;
+    }
+
+    public Integer getNationaliteId() {
+        return nationaliteId;
+    }
+
+    public String getNationalite() {
+        return nationalite;
+    }
+
+    public Integer getPasseportId() {
+        return passeportId;
+    }
+
+    public String getPasseportNumero() {
+        return passeportNumero;
+    }
+
+    public LocalDate getPasseportDelivrance() {
+        return passeportDelivrance;
+    }
+
+    public LocalDate getPasseportExpiration() {
+        return passeportExpiration;
+    }
+
+    public Integer getVisaTransformableId() {
+        return visaTransformableId;
+    }
+
+    public String getVisaTransformableNumero() {
+        return visaTransformableNumero;
+    }
+
+    public String getCarteResidentNumero() {
+        return carteResidentNumero;
+    }
+
+    public LocalDate getVtDateEntree() {
+        return vtDateEntree;
+    }
+
+    public String getVtLieuEntree() {
+        return vtLieuEntree;
+    }
+
+    public LocalDate getVtDateFin() {
+        return vtDateFin;
+    }
 }

@@ -442,20 +442,26 @@ public class DemandeController {
     }
 
     private Visa construireVisaInjecte(DemandeForm form) {
-        if (form.getNumeroVisa() == null || form.getDateDebutVisa() == null || form.getDateFinVisa() == null)
+        if (form.getDateDebutVisa() == null || form.getDateFinVisa() == null)
             return null;
         Visa visa = new Visa();
-        visa.setNumero(form.getNumeroVisa());
+        String numeroVisa = form.getNumeroVisa();
+        visa.setNumero((numeroVisa == null || numeroVisa.isBlank())
+                ? demandeService.genererNumeroVisa()
+                : numeroVisa.trim());
         visa.setDateDebut(form.getDateDebutVisa());
         visa.setDateFin(form.getDateFinVisa());
         return visa;
     }
 
     private CarteResident construireCarteInjectee(DemandeForm form) {
-        if (form.getNumeroCarteResident() == null || form.getDateDebutCarte() == null || form.getDateFinCarte() == null)
+        if (form.getDateDebutCarte() == null || form.getDateFinCarte() == null)
             return null;
         CarteResident carte = new CarteResident();
-        carte.setNumero(form.getNumeroCarteResident());
+        String numeroCarteResident = form.getNumeroCarteResident();
+        carte.setNumero((numeroCarteResident == null || numeroCarteResident.isBlank())
+                ? demandeService.genererNumeroCarteResident()
+                : numeroCarteResident.trim());
         carte.setDateDebut(form.getDateDebutCarte());
         carte.setDateFin(form.getDateFinCarte());
         return carte;

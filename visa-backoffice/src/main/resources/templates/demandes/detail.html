@@ -68,6 +68,27 @@
             <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
             <div th:if="${errorMessage}"   class="alert alert-error"   th:text="${errorMessage}"></div>
 
+            <!-- QR Code Suivi (front-office) -->
+            <div class="card">
+                <h2>QR Code de suivi</h2>
+                <p class="page-subtitle" style="margin-bottom:12px;">
+                    Scannez ce QR Code pour ouvrir directement le suivi de cette demande.
+                </p>
+                <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+                    <img
+                        alt="QR Code Suivi"
+                        width="180"
+                        height="180"
+                        th:src="@{/api/public/qr/ref.png(demandeNumero=${demande.numDemande}, passeportNumero=${passeport != null ? passeport.numero : ''})}"
+                        style="border:1px solid #e5e7eb;border-radius:10px;background:#fff;padding:10px;" />
+                    <div style="font-size:0.92rem;color:#374151;">
+                        <div style="font-weight:600;margin-bottom:6px;">Références encodées</div>
+                        <div><strong>Demande :</strong> <span th:text="${demande.numDemande}">MADA-2026-0001</span></div>
+                        <div th:if="${passeport != null}"><strong>Passeport :</strong> <span th:text="${passeport.numero}">AB123456</span></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Bannière dossier verrouillé -->
             <div th:if="${scanTermine}" class="paper">
                 <div class="locked-banner">

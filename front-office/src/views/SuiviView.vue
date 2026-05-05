@@ -18,6 +18,32 @@ const loading = ref(false)
 const errorMsg = ref('')
 const suivi = ref(null)
 
+async function loadByDemandeNumero(demandeNumero) {
+  loading.value = true
+  errorMsg.value = ''
+  suivi.value = null
+  try {
+    suivi.value = await getSuiviByDemandeNumero(demandeNumero)
+  } catch (e) {
+    errorMsg.value = e?.message || 'Impossible de charger le suivi'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function loadByPasseportNumero(passeportNumero) {
+  loading.value = true
+  errorMsg.value = ''
+  suivi.value = null
+  try {
+    suivi.value = await getSuiviByPasseportNumero(passeportNumero)
+  } catch (e) {
+    errorMsg.value = e?.message || 'Impossible de charger le suivi'
+  } finally {
+    loading.value = false
+  }
+}
+
 function formatDateTime(value) {
   if (!value) return ''
   const dt = new Date(value)
@@ -53,8 +79,36 @@ async function loadByToken(token) {
   }
 }
 
+async function loadFromRoute() {
+  const token = route.params.token
+  const demandeNumero = route.query.demandeNumero
+  const passeportNumero = route.query.passeportNumero
+
+  if (token) {
+    tokenInput.value = String(token)
+    demandeNumeroInput.value = ''
+    passeportNumeroInput.value = ''
+    await loadByToken(token)
+    return
+  }
+
+  if (demandeNumero) {
+    tokenInput.value = ''
+    demandeNumeroInput.value = String(demandeNumero)
+    passeportNumeroInput.value = ''
+    await loadByDemandeNumero(demandeNumero)
+    return
+  }
+
+  if (passeportNumero) {
+    tokenInput.value = ''
+    demandeNumeroInput.value = ''
+    passeportNumeroInput.value = String(passeportNumero)
+    await loadByPasseportNumero(passeportNumero)
+  }
+}
+
 async function submit() {
-  loading.value = true
   errorMsg.value = ''
   suivi.value = null
 
@@ -64,42 +118,52 @@ async function submit() {
 
   try {
     if (t) {
+      const currentToken = route.params.token
+      if (currentToken && String(currentToken) === t) {
+        await loadByToken(t)
+        return
+      }
+
       await router.push(`/suivi/${encodeURIComponent(t)}`)
       return
     }
 
     if (dn) {
-      suivi.value = await getSuiviByDemandeNumero(dn)
+      const currentDn = route.query.demandeNumero
+      if (route.path === '/suivi' && currentDn && String(currentDn) === dn) {
+        await loadByDemandeNumero(dn)
+        return
+      }
+
+      await router.push({ path: '/suivi', query: { demandeNumero: dn } })
       return
     }
 
     if (pn) {
-      suivi.value = await getSuiviByPasseportNumero(pn)
+      const currentPn = route.query.passeportNumero
+      if (route.path === '/suivi' && currentPn && String(currentPn) === pn) {
+        await loadByPasseportNumero(pn)
+        return
+      }
+
+      await router.push({ path: '/suivi', query: { passeportNumero: pn } })
       return
     }
 
     throw new Error('Saisis un token QR, un numéro de demande, ou un numéro de passeport')
   } catch (e) {
     errorMsg.value = e?.message || 'Erreur'
-  } finally {
-    loading.value = false
   }
 }
 
 onMounted(() => {
-  const token = route.params.token
-  if (token) {
-    tokenInput.value = String(token)
-    loadByToken(token)
-  }
+  loadFromRoute()
 })
 
 watch(
-  () => route.params.token,
-  (token) => {
-    if (!token) return
-    tokenInput.value = String(token)
-    loadByToken(token)
+  () => [route.params.token, route.query.demandeNumero, route.query.passeportNumero],
+  () => {
+    loadFromRoute()
   }
 )
 </script>

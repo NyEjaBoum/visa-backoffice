@@ -292,4 +292,35 @@ public class DemandeService {
                 }).orElse(0) + 1;
         return prefix + String.format("%04d", next);
     }
+
+    public String genererNumeroCarteResident(){
+        int year = LocalDate.now().getYear();
+        String prefix = "CR-" + year + "-";
+        int next = carteResidentRepository
+                .findTopByNumeroStartingWithOrderByNumeroDesc(prefix)
+                .map(carte -> extraireSequence(carte.getNumero(), prefix))
+                .orElse(0) + 1;
+        return prefix + String.format("%04d", next);
+    }
+
+    public String genererNumeroVisa() {
+        int year = LocalDate.now().getYear();
+        String prefix = "VISA-" + year + "-";
+        int next = visaRepository
+                .findTopByNumeroStartingWithOrderByNumeroDesc(prefix)
+                .map(visa -> extraireSequence(visa.getNumero(), prefix))
+                .orElse(0) + 1;
+        return prefix + String.format("%04d", next);
+    }
+
+    private int extraireSequence(String numero, String prefix) {
+        if (numero == null || !numero.startsWith(prefix)) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(numero.substring(prefix.length()));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
 }
