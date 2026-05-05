@@ -33,6 +33,8 @@ public class DemandeService {
     private final DemandeurService demandeurService;
     private final PasseportService passeportService;
     private final VisaTransformableService visaTransformableService;
+    private final VisaService visaService;
+    private final CarteResidentService carteResidentService;
 
     public DemandeService(DemandeRepository demandeRepository,
                           StatutService statutService,
@@ -46,7 +48,9 @@ public class DemandeService {
                           PieceFichierService pieceFichierService,
                           DemandeurService demandeurService,
                           PasseportService passeportService,
-                          VisaTransformableService visaTransformableService) {
+                          VisaTransformableService visaTransformableService,
+                          VisaService visaService,
+                          CarteResidentService carteResidentService) {
         this.demandeRepository = demandeRepository;
         this.statutService = statutService;
         this.dossierCompletRepository = dossierCompletRepository;
@@ -60,6 +64,8 @@ public class DemandeService {
         this.demandeurService = demandeurService;
         this.passeportService = passeportService;
         this.visaTransformableService = visaTransformableService;
+        this.visaService = visaService;
+        this.carteResidentService = carteResidentService;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -225,14 +231,10 @@ public class DemandeService {
 
         // Liaison des documents physiques à l'injection
         if (visaInjecteStub != null) {
-            visaInjecteStub.setDemande(demandeInj);
-            visaInjecteStub.setPasseport(passeportEtapeA);
-            visaRepository.save(visaInjecteStub);
+            visaService.create(visaInjecteStub, demandeInj, passeportEtapeA);
         }
         if (carteInjecteeStub != null) {
-            carteInjecteeStub.setDemande(demandeInj);
-            carteInjecteeStub.setPasseport(passeportEtapeA);
-            carteResidentRepository.save(carteInjecteeStub);
+            carteResidentService.create(carteInjecteeStub, demandeInj, passeportEtapeA);
         }
 
         // ÉTAPE B : Création du présent (Dossier Cible — DUPLICATA ou TRANSFERT)

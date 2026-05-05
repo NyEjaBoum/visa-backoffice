@@ -7,5 +7,9 @@ import java.util.Optional;
 
 public interface CarteResidentRepository extends JpaRepository<CarteResident, Integer> {
 
+	Optional<CarteResident> findByNumero(String numero);
+
+	Optional<CarteResident> findByDemandeId(Integer demandeId);
+
 	Optional<CarteResident> findTopByNumeroStartingWithOrderByNumeroDesc(String prefix);
 }
