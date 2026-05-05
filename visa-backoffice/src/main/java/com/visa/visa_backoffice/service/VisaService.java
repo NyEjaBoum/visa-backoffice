@@ -27,6 +27,10 @@ public class VisaService {
         return visaRepository.findAll();
     }
 
+    // public String test(){
+    //     return 'test';
+    // }
+
     @Transactional(readOnly = true)
     public Visa findByIdOrThrow(Integer id) {
         return visaRepository.findById(id)
