@@ -45,139 +45,153 @@
                          padding:12px 16px; margin-bottom:16px; color:#92400e; font-weight:600; }
     </style>
 </head>
-<body class="app-body">
-<div class="app-layout">
+<body>
+<div class="app-shell">
 
     <div th:replace="~{fragments/sidebar :: sidebar('demandes')}"></div>
 
-    <main class="app-content">
-        <div class="page">
-
-            <!-- Header dossier -->
-            <div class="detail-header">
-                <div>
-                    <div class="detail-num" th:text="${demande.numDemande}">MADA-2026-0001</div>
-                    <div class="detail-date"
-                         th:text="'Créé le ' + ${#temporals.format(demande.dateCreation, 'dd/MM/yyyy à HH:mm')}">
-                    </div>
-                </div>
+    <main class="page-wrapper">
+        <header class="page-header">
+            <div>
+                <h1 th:text="'Dossier ' + ${demande.numDemande}">Dossier MADA-2026-0001</h1>
+                <p th:text="'Créé le ' + ${#temporals.format(demande.dateCreation, 'dd/MM/yyyy à HH:mm')}"></p>
+            </div>
+            <div class="actions-group">
                 <span class="badge"
-                      th:classappend="${demande.statut?.libelle == 'CREE'} ? ' badge-cree'
-                                    : (${demande.statut?.libelle == 'SCAN TERMINÉ'} ? ' badge-scan'
-                                    : (${demande.statut?.libelle == 'VALIDE'} ? ' badge-valide' : ' badge-annule'))"
+                      th:classappend="${demande.statut?.libelle == 'ANNULE'} ? ' badge--danger' : (${demande.statut?.libelle == 'VALIDE' or demande.statut?.libelle == 'VISA APPROUVE' or demande.statut?.libelle == 'SCAN TERMINE' or demande.statut?.libelle == 'SCAN TERMINÉ'} ? ' badge--primary' : ' badge--muted')"
                       th:text="${demande.statut?.libelle}">CREE</span>
             </div>
+        </header>
 
+        <div class="canvas">
             <!-- Alertes flash -->
             <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
             <div th:if="${errorMessage}"   class="alert alert-error"   th:text="${errorMessage}"></div>
 
+            <!-- QR Code Suivi (front-office) -->
+            <div class="card">
+                <h2>QR Code de suivi</h2>
+                <p class="page-subtitle" style="margin-bottom:12px;">
+                    Scannez ce QR Code pour ouvrir directement le suivi de cette demande.
+                </p>
+                <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+                    <img
+                        alt="QR Code Suivi"
+                        width="180"
+                        height="180"
+                        th:src="@{/api/public/qr/ref.png(demandeNumero=${demande.numDemande}, passeportNumero=${passeport != null ? passeport.numero : ''})}"
+                        style="border:1px solid #e5e7eb;border-radius:10px;background:#fff;padding:10px;" />
+                    <div style="font-size:0.92rem;color:#374151;">
+                        <div style="font-weight:600;margin-bottom:6px;">Références encodées</div>
+                        <div><strong>Demande :</strong> <span th:text="${demande.numDemande}">MADA-2026-0001</span></div>
+                        <div th:if="${passeport != null}"><strong>Passeport :</strong> <span th:text="${passeport.numero}">AB123456</span></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Bannière dossier verrouillé -->
-            <div th:if="${scanTermine}" class="locked-banner">
-                🔒 Ce dossier est finalisé (SCAN TERMINÉ) — lecture seule. Téléchargez le récépissé ci-dessous.
+            <div th:if="${scanTermine}" class="paper">
+                <div class="locked-banner">
+                    🔒 Ce dossier est finalisé (SCAN TERMINÉ) — lecture seule. Téléchargez le récépissé ci-dessous.
+                </div>
             </div>
 
             <!-- Nature de la démarche -->
-            <div class="section">
-                <h2 class="section-title">Nature de la démarche</h2>
-                <div class="grid-2">
-                    <div class="field-block">
-                        <span class="field-label">Type de demande</span>
-                        <span class="field-value" th:text="${demande.typeDemande?.libelle ?: '—'}"></span>
+            <div class="card">
+                <h2>Nature de la démarche</h2>
+                <div class="grid">
+                    <div class="field">
+                        <div class="label">Type de demande</div>
+                        <div class="value" th:text="${demande.typeDemande?.libelle ?: '—'}"></div>
                     </div>
-                    <div class="field-block">
-                        <span class="field-label">Catégorie visa</span>
-                        <span class="field-value" th:text="${demande.typeVisa?.libelle ?: '—'}"></span>
+                    <div class="field">
+                        <div class="label">Catégorie visa</div>
+                        <div class="value" th:text="${demande.typeVisa?.libelle ?: '—'}"></div>
                     </div>
                 </div>
             </div>
 
             <!-- État civil -->
-            <div class="section" th:if="${demande.demandeur != null}">
-                <h2 class="section-title">1. État civil</h2>
-                <div class="grid-2">
-                    <div class="field-block">
-                        <span class="field-label">Nom</span>
-                        <span class="field-value" th:text="${demande.demandeur.nom ?: '—'}"></span>
+            <div class="card" th:if="${demande.demandeur != null}">
+                <h2>1. État civil</h2>
+                <div class="grid">
+                    <div class="field">
+                        <div class="label">Nom</div>
+                        <div class="value" th:text="${demande.demandeur.nom ?: '—'}"></div>
                     </div>
-                    <div class="field-block">
-                        <span class="field-label">Prénoms</span>
-                        <span class="field-value" th:text="${demande.demandeur.prenoms ?: '—'}"></span>
+                    <div class="field">
+                        <div class="label">Prénoms</div>
+                        <div class="value" th:text="${demande.demandeur.prenoms ?: '—'}"></div>
                     </div>
-                    <div class="field-block">
-                        <span class="field-label">Nom de jeune fille</span>
-                        <span class="field-value" th:text="${demande.demandeur.nomJeuneFille ?: '—'}"></span>
+                    <div class="field">
+                        <div class="label">Nom de jeune fille</div>
+                        <div class="value" th:text="${demande.demandeur.nomJeuneFille ?: '—'}"></div>
                     </div>
-                    <div class="field-block">
-                        <span class="field-label">Date de naissance</span>
-                        <span class="field-value"
-                              th:text="${demande.demandeur.dateNaissance != null ? #temporals.format(demande.demandeur.dateNaissance,'dd/MM/yyyy') : '—'}"></span>
+                    <div class="field">
+                        <div class="label">Date de naissance</div>
+                        <div class="value" th:text="${demande.demandeur.dateNaissance != null ? #temporals.format(demande.demandeur.dateNaissance,'dd/MM/yyyy') : '—'}"></div>
                     </div>
-                    <div class="field-block">
-                        <span class="field-label">Situation familiale</span>
-                        <span class="field-value" th:text="${demande.demandeur.situationFamiliale?.libelle ?: '—'}"></span>
+                    <div class="field">
+                        <div class="label">Situation familiale</div>
+                        <div class="value" th:text="${demande.demandeur.situationFamiliale?.libelle ?: '—'}"></div>
                     </div>
-                    <div class="field-block">
-                        <span class="field-label">Nationalité</span>
-                        <span class="field-value" th:text="${demande.demandeur.nationalite?.libelle ?: '—'}"></span>
+                    <div class="field">
+                        <div class="label">Nationalité</div>
+                        <div class="value" th:text="${demande.demandeur.nationalite?.libelle ?: '—'}"></div>
                     </div>
-                    <div class="field-block">
-                        <span class="field-label">Profession</span>
-                        <span class="field-value" th:text="${demande.demandeur.profession ?: '—'}"></span>
+                    <div class="field">
+                        <div class="label">Profession</div>
+                        <div class="value" th:text="${demande.demandeur.profession ?: '—'}"></div>
                     </div>
-                    <div class="field-block">
-                        <span class="field-label">Adresse à Madagascar</span>
-                        <span class="field-value" th:text="${demande.demandeur.adresseMada ?: '—'}"></span>
+                    <div class="field">
+                        <div class="label">Adresse à Madagascar</div>
+                        <div class="value" th:text="${demande.demandeur.adresseMada ?: '—'}"></div>
                     </div>
-                    <div class="field-block">
-                        <span class="field-label">Contact</span>
-                        <span class="field-value" th:text="${demande.demandeur.contactMada ?: '—'}"></span>
+                    <div class="field">
+                        <div class="label">Contact</div>
+                        <div class="value" th:text="${demande.demandeur.contactMada ?: '—'}"></div>
                     </div>
                 </div>
             </div>
 
             <!-- Passeport -->
-            <div class="section" th:if="${passeport != null}">
-                <h2 class="section-title">2. Passeport</h2>
-                <div class="grid-2">
-                    <div class="field-block">
-                        <span class="field-label">Numéro</span>
-                        <span class="field-value" th:text="${passeport.numero ?: '—'}"></span>
+            <div class="card" th:if="${passeport != null}">
+                <h2>2. Passeport</h2>
+                <div class="grid">
+                    <div class="field">
+                        <div class="label">Numéro</div>
+                        <div class="value" th:text="${passeport.numero ?: '—'}"></div>
                     </div>
-                    <div class="field-block">
-                        <span class="field-label">Date de délivrance</span>
-                        <span class="field-value"
-                              th:text="${passeport.dateDelivrance != null ? #temporals.format(passeport.dateDelivrance,'dd/MM/yyyy') : '—'}"></span>
+                    <div class="field">
+                        <div class="label">Date de délivrance</div>
+                        <div class="value" th:text="${passeport.dateDelivrance != null ? #temporals.format(passeport.dateDelivrance,'dd/MM/yyyy') : '—'}"></div>
                     </div>
-                    <div class="field-block">
-                        <span class="field-label">Date d'expiration</span>
-                        <span class="field-value"
-                              th:text="${passeport.dateExpiration != null ? #temporals.format(passeport.dateExpiration,'dd/MM/yyyy') : '—'}"></span>
+                    <div class="field">
+                        <div class="label">Date d'expiration</div>
+                        <div class="value" th:text="${passeport.dateExpiration != null ? #temporals.format(passeport.dateExpiration,'dd/MM/yyyy') : '—'}"></div>
                     </div>
                 </div>
             </div>
 
             <!-- Visa Transformable -->
-            <div class="section" th:if="${demande.visaTransformable != null}">
-                <h2 class="section-title">3. Visa Transformable</h2>
-                <div class="grid-2">
-                    <div class="field-block">
-                        <span class="field-label">Référence</span>
-                        <span class="field-value" th:text="${demande.visaTransformable.numero ?: '—'}"></span>
+            <div class="card" th:if="${demande.visaTransformable != null}">
+                <h2>3. Visa transformable</h2>
+                <div class="grid">
+                    <div class="field">
+                        <div class="label">Référence</div>
+                        <div class="value" th:text="${demande.visaTransformable.numero ?: '—'}"></div>
                     </div>
-                    <div class="field-block">
-                        <span class="field-label">Date d'entrée</span>
-                        <span class="field-value"
-                              th:text="${demande.visaTransformable.dateEntree != null ? #temporals.format(demande.visaTransformable.dateEntree,'dd/MM/yyyy') : '—'}"></span>
+                    <div class="field">
+                        <div class="label">Date d'entrée</div>
+                        <div class="value" th:text="${demande.visaTransformable.dateEntree != null ? #temporals.format(demande.visaTransformable.dateEntree,'dd/MM/yyyy') : '—'}"></div>
                     </div>
-                    <div class="field-block">
-                        <span class="field-label">Lieu d'entrée</span>
-                        <span class="field-value" th:text="${demande.visaTransformable.lieuEntree ?: '—'}"></span>
+                    <div class="field">
+                        <div class="label">Lieu d'entrée</div>
+                        <div class="value" th:text="${demande.visaTransformable.lieuEntree ?: '—'}"></div>
                     </div>
-                    <div class="field-block">
-                        <span class="field-label">Date de fin de visa</span>
-                        <span class="field-value"
-                              th:text="${demande.visaTransformable.dateFinVisa != null ? #temporals.format(demande.visaTransformable.dateFinVisa,'dd/MM/yyyy') : '—'}"></span>
+                    <div class="field">
+                        <div class="label">Date de fin de visa</div>
+                        <div class="value" th:text="${demande.visaTransformable.dateFinVisa != null ? #temporals.format(demande.visaTransformable.dateFinVisa,'dd/MM/yyyy') : '—'}"></div>
                     </div>
                 </div>
             </div>
@@ -185,8 +199,8 @@
             <!-- ═══════════════════════════════════════════════════════════════
                  4. PIÈCES JUSTIFICATIVES + SCAN
             ════════════════════════════════════════════════════════════════ -->
-            <div class="section" th:if="${!#lists.isEmpty(piecesFournies)}">
-                <h2 class="section-title">4. Pièces justificatives &amp; scan</h2>
+            <div class="card" th:if="${!#lists.isEmpty(piecesFournies)}">
+                <h2>4. Pièces justificatives &amp; scan</h2>
                 <p class="page-subtitle" style="margin-bottom:16px;"
                    th:if="${modifiable}">
                     Pour chaque pièce cochée, ajoutez le fichier scanné correspondant, puis cliquez sur
@@ -275,10 +289,10 @@
             </div>
 
             <!-- Actions principales -->
-            <div class="form-actions">
+            <div class="actions-group">
                 <a th:if="${modifiable}"
                    th:href="@{/demandes/{id}/modifier(id=${demande.id})}"
-                   class="btn btn-primary-app">
+                   class="btn-outline">
                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -289,10 +303,10 @@
                 <!-- Télécharger le récépissé PDF (uniquement après scan terminé) -->
                 <a
                    th:href="@{/demandes/{id}/recepisse.pdf(id=${demande.id})}"
-                   class="btn-pdf">
+                   class="btn-save">
                     ⬇ Télécharger le récépissé PDF
                 </a>
-                <a th:href="@{/demandes}" class="btn btn-ghost">← Retour à la liste</a>
+                <a th:href="@{/demandes}" class="btn-outline">← Retour à la liste</a>
             </div>
 
         </div>
