@@ -24,6 +24,11 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/visa_gestion?currentSchema=dev
       SPRING_DATASOURCE_USERNAME: app_dev
       SPRING_DATASOURCE_PASSWORD: dev_pwd
+      # URL de base pour les QR codes. Remplace localhost par ton IP LAN
+      # (ipconfig → IPv4) si tu veux scanner depuis un téléphone.
+      APP_FRONTOFFICE_BASE_URL: http://localhost:5174/#/suivi/
+    volumes:
+      - uploads_data:/root/visa-backoffice-uploads
     depends_on:
       db:
         condition: service_healthy
@@ -41,3 +46,4 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:
