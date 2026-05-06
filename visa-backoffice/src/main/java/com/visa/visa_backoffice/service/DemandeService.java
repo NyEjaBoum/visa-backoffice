@@ -118,7 +118,20 @@ public class DemandeService {
             vt = visaTransformableService.create(vtStub, demandeur);
         }
 
-        // 4. Créer la demande
+        // 4. Vérification métier : Duplicata/Transfert nécessite un visa ou carte résident existant
+        if (demandeurStub.getId() != null) {
+            String libelle = typeDemande.getLibelle() != null ? typeDemande.getLibelle().toUpperCase() : "";
+            if (libelle.contains("DUPLICATA") || libelle.contains("TRANSFERT")) {
+                boolean hasVisa = visaRepository.existsByDemande_Demandeur_Id(demandeur.getId());
+                boolean hasCarte = carteResidentRepository.existsByDemande_Demandeur_Id(demandeur.getId());
+                if (!hasVisa && !hasCarte) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "Ce demandeur n'a aucun visa ni carte de résident enregistré. Utilisez le formulaire de rattrapage.");
+                }
+            }
+        }
+
+        // 5. Créer la demande
         Demande demande = new Demande();
         demande.setNumDemande(genererNumeroDossier());
         if (demande.getQrToken() == null) {
@@ -130,10 +143,10 @@ public class DemandeService {
         demande.setTypeDemande(typeDemande);
         demande.setStatut(statutInitial);
         demande.setDateCreation(LocalDateTime.now());
-        
+
         demande = demandeRepository.save(demande);
 
-        // 5. Historique & Checklist
+        // 6. Historique & Checklist
         historiqueDemandeStatutService.creer(demande, statutInitial);
 
         pieceFournieService.creerChecklist(

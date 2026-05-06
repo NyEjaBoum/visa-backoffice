@@ -12,4 +12,6 @@ public interface VisaRepository extends JpaRepository<Visa, Integer> {
 	Optional<Visa> findByDemandeId(Integer demandeId);
 
 	Optional<Visa> findTopByNumeroStartingWithOrderByNumeroDesc(String prefix);
+
+	boolean existsByDemande_Demandeur_Id(Integer demandeurId);
 }
